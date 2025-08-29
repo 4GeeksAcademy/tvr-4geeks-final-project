@@ -17,6 +17,7 @@ class User(db.Model):
     location: Mapped[str] = mapped_column(String(120), nullable=True)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default='user')
     favorites: Mapped[List["Favorite"]] = db.relationship('Favorite', back_populates='user', cascade='all, delete-orphan')
+    img: Mapped[str] = mapped_column(String(240), nullable=True)
 
     def serialize(self):
         return {
@@ -25,7 +26,8 @@ class User(db.Model):
             "user_name": self.user_name,
             "email": self.email,
             "birth_date": self.birth_date,
-            "location": self.location
+            "location": self.location,
+            "img": self.img
         }
 
 class Country(db.Model):
@@ -68,10 +70,12 @@ class Poi(db.Model):
     description: Mapped[str] = mapped_column(String(500), nullable=False)
     latitude: Mapped[str] = mapped_column(nullable=False)
     longitude: Mapped[str] = mapped_column(nullable=False)
-    img: Mapped[str] = mapped_column(String(240), nullable=False)
     city_id: Mapped[str] = mapped_column(db.ForeignKey('city.id'), nullable=False)
     city: Mapped["City"] = db.relationship('City', back_populates='pois')
     favorited_by: Mapped[List["Favorite"]] = db.relationship('Favorite', back_populates='poi', cascade='all, delete-orphan')
+    images: Mapped[List["PoiImage"]] = db.relationship('PoiImage', back_populates='poi', cascade='all, delete-orphan')
+    tags: Mapped[List["Tag"]] = db.relationship('Tag', back_populates='poi', cascade='all, delete-orphan')
+
     def serialize(self):
         return {
             "id": self.id,
@@ -79,8 +83,37 @@ class Poi(db.Model):
             "description": self.description,
             "latitude": self.latitude,
             "longitude": self.longitude,
-            "img": self.img,
             "city_id": self.city_id,
+            "images": [img.url for img in self.images],
+            "tags": [tag.url for tag in self.tags]
+        }
+
+class PoiImage(db.Model):
+    __tablename__ = 'poi_image'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    url: Mapped[str] = mapped_column(String(240), nullable=False)
+    poi_id: Mapped[str] = mapped_column(db.ForeignKey('poi.id'), nullable=False)
+    poi: Mapped["Poi"] = db.relationship('Poi', back_populates='images')    
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "url": self.url,
+            "poi_id": self.poi_id
+        }
+    
+class Tag(db.Model):
+    __tablename__ = 'tag'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    name: Mapped[str] = mapped_column(String(240), nullable=False)
+    poi_id: Mapped[str] = mapped_column(db.ForeignKey('poi.id'), nullable=False)
+    poi: Mapped["Poi"] = db.relationship('Poi', back_populates='tags')
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "poi_id": self.poi_id
         }
 
 class Favorite(db.Model):
