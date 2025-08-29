@@ -8,7 +8,7 @@ db = SQLAlchemy()
 
 class User(db.Model):
     __tablename__ = 'user'
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     user_name: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
@@ -25,13 +25,12 @@ class User(db.Model):
             "user_name": self.user_name,
             "email": self.email,
             "birth_date": self.birth_date,
-            "location": self.location,
-            "role": self.role
+            "location": self.location
         }
 
 class Country(db.Model):
     __tablename__ = 'country'
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     img: Mapped[str] = mapped_column(String(240), nullable=False)
     cities: Mapped[List["City"]] = db.relationship('City', back_populates='country', cascade='all, delete-orphan')
@@ -40,17 +39,16 @@ class Country(db.Model):
             "id": self.id,
             "name": self.name,
             "img": self.img,
-            "cities": [city.serialize() for city in self.cities]
+            "cities": [city.id for city in self.cities]
         }
 
 class City(db.Model):
     __tablename__ = 'city'
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     img: Mapped[str] = mapped_column(String(240), nullable=False)
     climate: Mapped[str] = mapped_column(String(120), nullable=False)
-    country_id: Mapped[str] = mapped_column(
-        db.ForeignKey('country.id'), nullable=False)
+    country_id: Mapped[str] = mapped_column(db.ForeignKey('country.id'), nullable=False)
     country: Mapped["Country"] = db.relationship('Country', back_populates='cities')
     pois: Mapped[List["Poi"]] = db.relationship('Poi', back_populates='city', cascade='all, delete-orphan')
     def serialize(self):
@@ -60,19 +58,18 @@ class City(db.Model):
             "img": self.img,
             "climate": self.climate,
             "country_id": self.country_id,
-            "pois": [poi.serialize() for poi in self.pois] 
+            "pois": [poi.id for poi in self.pois]
         }
 
 class Poi(db.Model):
     __tablename__ = 'poi'
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     description: Mapped[str] = mapped_column(String(500), nullable=False)
     latitude: Mapped[str] = mapped_column(nullable=False)
     longitude: Mapped[str] = mapped_column(nullable=False)
     img: Mapped[str] = mapped_column(String(240), nullable=False)
-    city_id: Mapped[str] = mapped_column(
-        db.ForeignKey('city.id'), nullable=False)
+    city_id: Mapped[str] = mapped_column(db.ForeignKey('city.id'), nullable=False)
     city: Mapped["City"] = db.relationship('City', back_populates='pois')
     favorited_by: Mapped[List["Favorite"]] = db.relationship('Favorite', back_populates='poi', cascade='all, delete-orphan')
     def serialize(self):
@@ -88,8 +85,8 @@ class Poi(db.Model):
 
 class Favorite(db.Model):
     __tablename__ = 'favorite'
-    user_id: Mapped[int] = mapped_column(db.ForeignKey('user.id'), nullable=False, primary_key=True)
-    poi_id: Mapped[int] = mapped_column(db.ForeignKey('poi.id'), nullable=False, primary_key=True)
+    user_id: Mapped[str] = mapped_column(db.ForeignKey('user.id'), nullable=False, primary_key=True)
+    poi_id: Mapped[str] = mapped_column(db.ForeignKey('poi.id'), nullable=False, primary_key=True)
     user: Mapped["User"] = db.relationship('User', back_populates='favorites')
     poi: Mapped["Poi"] = db.relationship('Poi', back_populates='favorited_by')
 
