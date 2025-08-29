@@ -85,7 +85,7 @@ class Poi(db.Model):
             "longitude": self.longitude,
             "city_id": self.city_id,
             "images": [img.url for img in self.images],
-            "tags": [tag.url for tag in self.tags]
+            "tags": [tag.name for tag in self.tags]
         }
 
 class PoiImage(db.Model):
