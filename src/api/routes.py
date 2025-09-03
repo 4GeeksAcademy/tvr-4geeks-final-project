@@ -57,19 +57,21 @@ def get_authenticated_user():
     return user
 
 
-def get_object_or_404(model, object_id, not_found_message):
+def get_object_or_404(model, unique_field_value, not_found_message, field_name="id"):
     """
-    Retrieve an object by its ID from the database.
+    Retrieve an object by a unique field from the database.
     Args:
         model: The SQLAlchemy model class to query.
-        object_id: The primary key of the object to retrieve.
+        unique_field_value: The value of the unique field to retrieve.
         not_found_message: The error message to return if the object is not found.
+        field_name: The name of the unique field (default is 'id').
     Raises:
         APIException: If the object does not exist.
     Returns:
         db.Model: The retrieved object.
     """
-    obj = model.query.get(object_id)
+    obj = model.query.filter(getattr(model, field_name)
+                             == unique_field_value).first()
     if not obj:
         raise APIException(not_found_message, status_code=404)
     return obj
@@ -98,24 +100,6 @@ def require_body_fields(body, fields, item_name=None):
             f"Extra fields not allowed: {', '.join(extra_fields)}{item_info}", status_code=400)
 
 
-def get_all_serialized(model, not_found_message):
-    """
-    Retrieve and serialize all objects of a given model.
-    Args:
-        model: The SQLAlchemy model class to query.
-        not_found_message: The error message to return if no objects are found.
-    Raises:
-        APIException: If no objects are found.
-    Returns:
-        Response: A JSON list of serialized objects.
-    """
-    items = model.query.all()
-    if items:
-        return jsonify([item.serialize() for item in items]), 200
-    else:
-        raise APIException(not_found_message, status_code=404)
-
-
 def normalize_body_to_list(body):
     """
     Normalize the request body to a list format.
@@ -134,81 +118,6 @@ def normalize_body_to_list(body):
         return body
     else:
         raise APIException('Invalid input format', status_code=400)
-
-
-def get_country_by_name_or_404(country_name: str) -> Country:
-    """
-    Resolve a country by its name (globally unique) or raise a 404 error.
-    Args:
-        country_name: The name of the country to resolve.
-    Raises:
-        APIException: If the country name is missing or the country does not exist.
-    Returns:
-        Country: The resolved country object.
-    """
-    if not country_name or not isinstance(country_name, str):
-        raise APIException('country_name is required', status_code=400)
-    country = Country.query.filter_by(name=country_name).first()
-    if not country:
-        raise APIException('Country not found', status_code=404)
-    return country
-
-
-def get_city_by_names_or_404(country_name: str, city_name: str) -> City:
-    """
-    Resolve a city by its country name and city name or raise a 404 error.
-    Args:
-        country_name: The name of the country the city belongs to.
-        city_name: The name of the city to resolve.
-    Raises:
-        APIException: If the country or city name is missing, or the city does not exist.
-    Returns:
-        City: The resolved city object.
-    """
-    if not country_name or not city_name:
-        raise APIException(
-            'country_name and city_name are required', status_code=400)
-    city = City.query.join(Country, City.country_id == Country.id)\
-        .filter(Country.name == country_name, City.name == city_name).first()
-    if not city:
-        raise APIException('City not found', status_code=404)
-    return city
-
-
-def ensure_unique_city_name_in_country(name: str, country_id: str, exclude_id: str | None = None):
-    """
-    Ensure that no other city with the same name exists in the specified country.
-    Args:
-        name: The name of the city to check.
-        country_id: The ID of the country to check within.
-        exclude_id: Optional. The ID of the city to exclude from the check.
-    Raises:
-        APIException: If a city with the same name already exists in the country.
-    """
-    q = City.query.filter_by(name=name, country_id=country_id)
-    if exclude_id:
-        q = q.filter(City.id != exclude_id)
-    if q.first():
-        raise APIException(
-            f"City with name '{name}' already exists in this country", status_code=400)
-
-
-def ensure_unique_poi_name_in_city(name: str, city_id: str, exclude_id: str | None = None):
-    """
-    Ensure that no other POI with the same name exists in the specified city.
-    Args:
-        name: The name of the POI to check.
-        city_id: The ID of the city to check within.
-        exclude_id: Optional. The ID of the POI to exclude from the check.
-    Raises:
-        APIException: If a POI with the same name already exists in the city.
-    """
-    q = Poi.query.filter_by(name=name, city_id=city_id)
-    if exclude_id:
-        q = q.filter(Poi.id != exclude_id)
-    if q.first():
-        raise APIException(
-            f"POI with name '{name}' already exists in this city", status_code=400)
 
 
 @api.route('/register', methods=['POST'])
@@ -453,18 +362,23 @@ def add_user():
     return jsonify({'message': 'User added successfully', 'user': user.serialize()}), 201
 
 
-@api.route('/users/<string:user_id>', methods=['DELETE'])
-def delete_user(user_id):
+@api.route('/users/<string:username>', methods=['DELETE'])
+def delete_user(username):
     """
-    Delete a user by ID.
+    Delete a user by username.
     Args:
-        user_id (str): User ID.
+        username (str): Username of the user to delete.
     Raises:
         APIException: If the user does not exist.
     Returns:
         Response: JSON with success or error message.
     """
-    user = get_object_or_404(User, user_id, 'User not found')
+    user = get_object_or_404(
+        User,
+        unique_field_value=username,
+        not_found_message='User not found',
+        field_name="user_name"
+    )
     try:
         db.session.delete(user)
         db.session.commit()
@@ -513,7 +427,11 @@ def add_favorite():
     poi_id = body.get('poi_id')
 
     require_body_fields(body, ['poi_id'])
-    poi = get_object_or_404(Poi, poi_id, 'Point of interest not found')
+    poi = get_object_or_404(
+        Poi,
+        unique_field_value=poi_id,
+        not_found_message='Point of interest not found'
+    )
 
     existing_favorite = Favorite.query.filter_by(
         user_id=user.id, poi_id=poi.id).first()
@@ -550,7 +468,10 @@ def remove_favorite(poi_id):
     """
     user = get_authenticated_user()
     favorite = get_object_or_404(
-        Favorite, (user.id, poi_id), 'Favorite not found')
+        Favorite,
+        unique_field_value=(user.id, poi_id),
+        not_found_message='Favorite not found'
+    )
     try:
         db.session.delete(favorite)
         db.session.commit()
@@ -566,7 +487,6 @@ def get_pois():
     Retrieve POIs with optional filters via query string.
     Supported filters:
       - name: partial match (ilike) on POI name.
-      - tag_id: exact match.
       - tag_name: exact match.
       - country_name: exact match.
       - city_name: exact match.
@@ -590,15 +510,11 @@ def get_pois():
             if city_name:
                 q = q.filter(City.name == city_name)
 
-        tag_id = request.args.get('tag_id')
         tag_name = request.args.get('tag_name')
-        if tag_id or tag_name:
+        if tag_name:
             q = q.join(PoiTag, PoiTag.poi_id == Poi.id)
-            if tag_name:
-                q = q.join(Tag, Tag.id == PoiTag.tag_id).filter(
-                    Tag.name == tag_name)
-            if tag_id:
-                q = q.filter(PoiTag.tag_id == tag_id)
+            q = q.join(Tag, Tag.id == PoiTag.tag_id).filter(
+                Tag.name == tag_name)
 
         pois = q.all()
         return jsonify([poi.serialize() for poi in pois]), 200
@@ -620,7 +536,11 @@ def get_poi(poi_id):
         Response: JSON with POI details.
     """
     try:
-        poi = get_object_or_404(Poi, poi_id, 'Point of interest not found')
+        poi = get_object_or_404(
+            Poi,
+            unique_field_value=poi_id,
+            not_found_message='Point of interest not found'
+        )
         return jsonify(poi.serialize()), 200
     except APIException:
         raise
@@ -650,19 +570,24 @@ def get_countries():
         handle_unexpected_error('retrieving countries')
 
 
-@api.route('/countries/<string:country_id>', methods=['GET'])
-def get_country(country_id):
+@api.route('/countries/<string:country_name>', methods=['GET'])
+def get_country(country_name):
     """
-    Retrieve details of a country by its ID.
+    Retrieve details of a country by its name.
     Args:
-        country_id (str): The country's ID.
+        country_name (str): The country's name.
     Raises:
         APIException: If country not found.
     Returns:
         Response: JSON with country details.
     """
     try:
-        country = get_object_or_404(Country, country_id, 'Country not found')
+        country = get_object_or_404(
+            Country,
+            unique_field_value=country_name,
+            not_found_message='Country not found',
+            field_name='name'
+        )
         return jsonify(country.serialize()), 200
     except APIException:
         raise
@@ -717,7 +642,11 @@ def get_city(city_id):
         Response: JSON with city details.
     """
     try:
-        city = get_object_or_404(City, city_id, 'City not found')
+        city = get_object_or_404(
+            City,
+            unique_field_value=city_id,
+            not_found_message='City not found'
+        )
         return jsonify(city.serialize()), 200
     except APIException:
         raise
@@ -778,7 +707,11 @@ def add_visited_poi():
     body = require_json_object(body, context='adding visited POI')
     poi_id = body.get('poi_id')
     require_body_fields(body, ['poi_id'])
-    poi = get_object_or_404(Poi, poi_id, 'POI not found')
+    poi = get_object_or_404(
+        Poi,
+        unique_field_value=poi_id,
+        not_found_message='POI not found'
+    )
 
     existing_visited = Visited.query.filter_by(
         user_id=user.id, poi_id=poi.id).first()
@@ -815,7 +748,10 @@ def delete_visited_poi(poi_id):
     """
     user = get_authenticated_user()
     visited = get_object_or_404(
-        Visited, (user.id, poi_id), 'Visited POI not found')
+        Visited,
+        unique_field_value=(user.id, poi_id),
+        not_found_message='Visited POI not found'
+    )
     try:
         db.session.delete(visited)
         db.session.commit()
@@ -875,19 +811,24 @@ def list_tags():
         handle_unexpected_error('listing tags')
 
 
-@api.route('/tags/<string:tag_id>', methods=['GET'])
-def get_tag(tag_id):
+@api.route('/tags/<string:tag_name>', methods=['GET'])
+def get_tag(tag_name):
     """
-    Retrieve a tag by its ID.
+    Retrieve a tag by its name.
     Args:
-        tag_id (str): Tag ID.
+        tag_name (str): Tag name.
     Raises:
         APIException: If tag not found.
     Returns:
         Response: JSON with tag details.
     """
     try:
-        tag = get_object_or_404(Tag, tag_id, 'Tag not found')
+        tag = get_object_or_404(
+            Tag,
+            unique_field_value=tag_name,
+            not_found_message='Tag not found',
+            field_name='name'
+        )
         return jsonify(tag.serialize()), 200
     except APIException:
         raise
@@ -895,18 +836,23 @@ def get_tag(tag_id):
         handle_unexpected_error('retrieving tag')
 
 
-@api.route('/tags/<string:tag_id>', methods=['DELETE'])
-def delete_tag(tag_id):
+@api.route('/tags/<string:tag_name>', methods=['DELETE'])
+def delete_tag(tag_name):
     """
-    Delete a tag by its ID.
+    Delete a tag by its name.
     Args:
-        tag_id (str): Tag ID.
+        tag_name (str): Tag name.
     Raises:
         APIException: If tag not found.
     Returns:
         Response: JSON with success or error message.
     """
-    tag = get_object_or_404(Tag, tag_id, 'Tag not found')
+    tag = get_object_or_404(
+        Tag,
+        unique_field_value=tag_name,
+        not_found_message='Tag not found',
+        field_name='name'
+    )
     try:
         db.session.delete(tag)
         db.session.commit()
@@ -916,27 +862,35 @@ def delete_tag(tag_id):
         handle_unexpected_error('deleting tag')
 
 
-@api.route('/pois/<string:poi_id>/tags/<string:tag_id>', methods=['POST'])
-def add_tag_to_poi(poi_id, tag_id):
+@api.route('/pois/<string:poi_id>/tags/<string:tag_name>', methods=['POST'])
+def add_tag_to_poi(poi_id, tag_name):
     """
-    Associate a tag to a POI.
+    Associate a tag to a POI by tag name.
     Args:
         poi_id (str): POI ID.
-        tag_id (str): Tag ID.
+        tag_name (str): Tag name.
     Raises:
         APIException: If POI or Tag not found, or already associated.
     Returns:
-        Response: JSON with updated POI.
+        Response: JSON with success message.
     """
     try:
-        poi = get_object_or_404(Poi, poi_id, 'POI not found')
-        tag = get_object_or_404(Tag, tag_id, 'Tag not found')
+        poi = get_object_or_404(
+            Poi,
+            unique_field_value=poi_id,
+            not_found_message='POI not found'
+        )
+        tag = get_object_or_404(
+            Tag,
+            unique_field_value=tag_name,
+            not_found_message='Tag not found',
+            field_name='name'
+        )
 
         existing = PoiTag.query.filter_by(poi_id=poi.id, tag_id=tag.id).first()
         if existing:
             raise APIException(
                 'Tag already associated with this POI', status_code=400)
-        # Create association
         poi_tag = PoiTag(poi_id=poi.id, tag_id=tag.id)
         db.session.add(poi_tag)
         db.session.commit()
@@ -947,23 +901,35 @@ def add_tag_to_poi(poi_id, tag_id):
         handle_unexpected_error('adding tag to POI')
 
 
-@api.route('/pois/<string:poi_id>/tags/<string:tag_id>', methods=['DELETE'])
-def remove_tag_from_poi(poi_id, tag_id):
+@api.route('/pois/<string:poi_id>/tags/<string:tag_name>', methods=['DELETE'])
+def remove_tag_from_poi(poi_id, tag_name):
     """
-    Remove a tag from a POI.
+    Remove a tag from a POI by tag name.
     Args:
         poi_id (str): POI ID.
-        tag_id (str): Tag ID.
+        tag_name (str): Tag name.
     Raises:
         APIException: If POI or Tag not found, or not associated.
     Returns:
-        Response: JSON with updated POI.
+        Response: JSON with success message.
     """
     try:
-        poi = get_object_or_404(Poi, poi_id, 'POI not found')
-        tag = get_object_or_404(Tag, tag_id, 'Tag not found')
+        poi = get_object_or_404(
+            Poi,
+            unique_field_value=poi_id,
+            not_found_message='POI not found'
+        )
+        tag = get_object_or_404(
+            Tag,
+            unique_field_value=tag_name,
+            not_found_message='Tag not found',
+            field_name='name'
+        )
         poi_tag = get_object_or_404(
-            PoiTag, (poi.id, tag.id), 'Tag not associated with this POI')
+            PoiTag,
+            unique_field_value=(poi.id, tag.id),
+            not_found_message='Tag not associated with this POI'
+        )
         db.session.delete(poi_tag)
         db.session.commit()
         return jsonify({'message': 'Tag removed from POI'}), 200
@@ -971,6 +937,32 @@ def remove_tag_from_poi(poi_id, tag_id):
         raise
     except Exception:
         handle_unexpected_error('removing tag from POI')
+
+
+@api.route('/pois/<string:poi_id>/tags', methods=['GET'])
+def get_tags_of_poi(poi_id):
+    """
+    Retrieve all tags associated with a given POI.
+    Args:
+        poi_id (str): POI ID.
+    Returns:
+        JSON list of tags. Returns an empty list if none are associated.
+    Raises:
+        APIException: If the POI does not exist or an unexpected error occurs.
+    """
+    try:
+        poi = get_object_or_404(
+            Poi,
+            unique_field_value=poi_id,
+            not_found_message='POI not found'
+        )
+        tags = db.session.query(Tag).join(PoiTag, PoiTag.tag_id == Tag.id)\
+            .filter(PoiTag.poi_id == poi.id).all()
+        return jsonify([t.serialize() for t in tags]), 200
+    except APIException:
+        raise
+    except Exception:
+        handle_unexpected_error('retrieving tags of POI')
 
 
 @api.route('/poiimages', methods=['POST'])
@@ -990,7 +982,11 @@ def create_poi_image():
         url = item.get('url')
         poi_id = item.get('poi_id')
         require_body_fields(item, ['url', 'poi_id'], item_name=url)
-        poi = get_object_or_404(Poi, poi_id, 'POI not found')
+        poi = get_object_or_404(
+            Poi,
+            unique_field_value=poi_id,
+            not_found_message='POI not found'
+        )
         id = str(uuid.uuid4())
         poi_image = PoiImage(id=id, url=url, poi_id=poi_id)
         created.append(poi_image)
@@ -1016,7 +1012,10 @@ def get_poi_image(image_id):
     """
     try:
         poi_image = get_object_or_404(
-            PoiImage, image_id, 'POI image not found')
+            PoiImage,
+            unique_field_value=image_id,
+            not_found_message='POI image not found'
+        )
         return jsonify(poi_image.serialize()), 200
     except APIException:
         raise
@@ -1047,23 +1046,324 @@ def delete_poi_image(image_id):
         handle_unexpected_error('deleting POI image')
 
 
-@api.route('/pois/<string:poi_id>/tags', methods=['GET'])
-def get_tags_of_poi(poi_id):
+@api.route('/pois', methods=['POST'])
+def create_poi():
     """
-    Retrieve all tags associated with a given POI.
+    Create a new point of interest (POI).
+    Body:
+        - name (str): POI name.
+        - description (str): POI description.
+        - latitude (str): Latitude.
+        - longitude (str): Longitude.
+        - city_id (str): City ID where the POI belongs.
+    Raises:
+        APIException: If required fields are missing, city does not exist, or a database error occurs.
+    Returns:
+        Response: JSON with the created POI.
+    """
+    body = request.get_json()
+    body = require_json_object(body, context='creating POI')
+    require_body_fields(
+        body, ['name', 'description', 'latitude', 'longitude', 'city_id'])
+    city = get_object_or_404(City, unique_field_value=body.get(
+        'city_id'), not_found_message='City not found')
+    try:
+        poi_id = str(uuid.uuid4())
+        poi = Poi(
+            id=poi_id,
+            name=body.get('name'),
+            description=body.get('description'),
+            latitude=body.get('latitude'),
+            longitude=body.get('longitude'),
+            city_id=city.id
+        )
+        db.session.add(poi)
+        db.session.commit()
+        return jsonify({'message': 'POI created successfully', 'poi': poi.serialize()}), 201
+    except IntegrityError as e:
+        db.session.rollback()
+        current_app.logger.warning(
+            f"Integrity error on create POI: {str(e.orig)}")
+        raise APIException("Database integrity error", status_code=400)
+    except Exception:
+        db.session.rollback()
+        handle_unexpected_error('creating POI')
+
+
+@api.route('/pois/<string:poi_id>', methods=['PUT'])
+def update_poi(poi_id):
+    """
+    Update an existing point of interest (POI).
     Args:
         poi_id (str): POI ID.
-    Returns:
-        JSON list of tags. Returns an empty list if none are associated.
+    Body:
+        - name (str, optional): POI name.
+        - description (str, optional): POI description.
+        - latitude (str, optional): Latitude.
+        - longitude (str, optional): Longitude.
+        - city_id (str, optional): City ID.
     Raises:
-        APIException: If the POI does not exist or an unexpected error occurs.
+        APIException: If POI or provided city does not exist, or a database error occurs.
+    Returns:
+        Response: JSON with the updated POI.
+    """
+    poi = get_object_or_404(Poi, unique_field_value=poi_id,
+                            not_found_message='POI not found')
+    body = request.get_json()
+    body = require_json_object(body, context='updating POI')
+    if 'city_id' in body and body.get('city_id'):
+        city = get_object_or_404(City, unique_field_value=body.get(
+            'city_id'), not_found_message='City not found')
+        poi.city_id = city.id
+    if 'name' in body and body.get('name'):
+        poi.name = body.get('name')
+    if 'description' in body and body.get('description'):
+        poi.description = body.get('description')
+    if 'latitude' in body and body.get('latitude'):
+        poi.latitude = body.get('latitude')
+    if 'longitude' in body and body.get('longitude'):
+        poi.longitude = body.get('longitude')
+    try:
+        db.session.commit()
+        return jsonify({'message': 'POI updated successfully', 'poi': poi.serialize()}), 200
+    except IntegrityError as e:
+        db.session.rollback()
+        current_app.logger.warning(
+            f"Integrity error on update POI: {str(e.orig)}")
+        raise APIException("Database integrity error", status_code=400)
+    except Exception:
+        db.session.rollback()
+        handle_unexpected_error('updating POI')
+
+
+@api.route('/pois/<string:poi_id>', methods=['DELETE'])
+def delete_poi(poi_id):
+    """
+    Delete a point of interest (POI) by its ID.
+    Args:
+        poi_id (str): POI ID.
+    Raises:
+        APIException: If the POI does not exist or a database error occurs.
+    Returns:
+        Response: JSON with success message.
+    """
+    poi = get_object_or_404(Poi, unique_field_value=poi_id,
+                            not_found_message='POI not found')
+    try:
+        db.session.delete(poi)
+        db.session.commit()
+        return jsonify({'message': 'POI deleted successfully'}), 200
+    except Exception:
+        db.session.rollback()
+        handle_unexpected_error('deleting POI')
+
+
+@api.route('/countries', methods=['POST'])
+def create_country():
+    """
+    Create a new country.
+    Body:
+        - name (str): Country name (unique).
+        - img (str): Country image URL.
+    Raises:
+        APIException: If required fields are missing, the name already exists, or a database error occurs.
+    Returns:
+        Response: JSON with the created country.
+    """
+    body = request.get_json()
+    body = require_json_object(body, context='creating country')
+    require_body_fields(body, ['name', 'img'])
+    existing = Country.query.filter_by(name=body.get('name')).first()
+    if existing:
+        raise APIException('Country name already exists', status_code=400)
+    try:
+        country = Country(id=str(uuid.uuid4()), name=body.get(
+            'name'), img=body.get('img'))
+        db.session.add(country)
+        db.session.commit()
+        return jsonify({'message': 'Country created successfully', 'country': country.serialize()}), 201
+    except IntegrityError as e:
+        db.session.rollback()
+        current_app.logger.warning(
+            f"Integrity error on create country: {str(e.orig)}")
+        raise APIException("Database integrity error", status_code=400)
+    except Exception:
+        db.session.rollback()
+        handle_unexpected_error('creating country')
+
+
+@api.route('/countries/<string:country_name>', methods=['PUT'])
+def update_country(country_name):
+    """
+    Update a country by its name.
+    Args:
+        country_name (str): Current country name.
+    Body:
+        - name (str, optional): New country name.
+        - img (str, optional): New image URL.
+    Raises:
+        APIException: If the country does not exist, new name conflicts, or a database error occurs.
+    Returns:
+        Response: JSON with the updated country.
+    """
+    country = get_object_or_404(Country, unique_field_value=country_name,
+                                not_found_message='Country not found', field_name='name')
+    body = request.get_json()
+    body = require_json_object(body, context='updating country')
+    if 'name' in body and body.get('name'):
+        existing = Country.query.filter(Country.name == body.get(
+            'name'), Country.id != country.id).first()
+        if existing:
+            raise APIException('Country name already exists', status_code=400)
+        country.name = body.get('name')
+    if 'img' in body and body.get('img'):
+        country.img = body.get('img')
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Country updated successfully', 'country': country.serialize()}), 200
+    except IntegrityError as e:
+        db.session.rollback()
+        current_app.logger.warning(
+            f"Integrity error on update country: {str(e.orig)}")
+        raise APIException("Database integrity error", status_code=400)
+    except Exception:
+        db.session.rollback()
+        handle_unexpected_error('updating country')
+
+
+@api.route('/countries/<string:country_name>', methods=['DELETE'])
+def delete_country(country_name):
+    """
+    Delete a country by its name.
+    Args:
+        country_name (str): Country name.
+    Raises:
+        APIException: If the country does not exist or a database error occurs.
+    Returns:
+        Response: JSON with success message.
+    """
+    country = get_object_or_404(Country, unique_field_value=country_name,
+                                not_found_message='Country not found', field_name='name')
+    try:
+        db.session.delete(country)
+        db.session.commit()
+        return jsonify({'message': 'Country deleted successfully'}), 200
+    except Exception:
+        db.session.rollback()
+        handle_unexpected_error('deleting country')
+
+
+@api.route('/cities', methods=['POST'])
+def create_city():
+    """
+    Create a new city.
+    Body:
+        - name (str): City name.
+        - img (str): City image URL.
+        - season (str): Preferred season.
+        - country_id (str): Country ID.
+    Raises:
+        APIException: If required fields are missing, country does not exist, or a database error occurs.
+    Returns:
+        Response: JSON with the created city.
+    """
+    body = request.get_json()
+    body = require_json_object(body, context='creating city')
+    require_body_fields(body, ['name', 'img', 'season', 'country_id'])
+    country = get_object_or_404(Country, unique_field_value=body.get(
+        'country_id'), not_found_message='Country not found')
+    try:
+        city = City(id=str(uuid.uuid4()), name=body.get('name'), img=body.get(
+            'img'), season=body.get('season'), country_id=country.id)
+        db.session.add(city)
+        db.session.commit()
+        return jsonify({'message': 'City created successfully', 'city': city.serialize()}), 201
+    except IntegrityError as e:
+        db.session.rollback()
+        current_app.logger.warning(
+            f"Integrity error on create city: {str(e.orig)}")
+        raise APIException("Database integrity error", status_code=400)
+    except Exception:
+        db.session.rollback()
+        handle_unexpected_error('creating city')
+
+
+@api.route('/cities/<string:city_id>', methods=['PUT'])
+def update_city(city_id):
+    """
+    Update a city by its ID.
+    Args:
+        city_id (str): City ID.
+    Body:
+        - name (str, optional): City name.
+        - img (str, optional): City image URL.
+        - season (str, optional): Preferred season.
+        - country_id (str, optional): Country ID.
+    Raises:
+        APIException: If the city or provided country does not exist, or a database error occurs.
+    Returns:
+        Response: JSON with the updated city.
+    """
+    city = get_object_or_404(
+        City, unique_field_value=city_id, not_found_message='City not found')
+    body = request.get_json()
+    body = require_json_object(body, context='updating city')
+    if 'country_id' in body and body.get('country_id'):
+        country = get_object_or_404(Country, unique_field_value=body.get(
+            'country_id'), not_found_message='Country not found')
+        city.country_id = country.id
+    if 'name' in body and body.get('name'):
+        city.name = body.get('name')
+    if 'img' in body and body.get('img'):
+        city.img = body.get('img')
+    if 'season' in body and body.get('season'):
+        city.season = body.get('season')
+    try:
+        db.session.commit()
+        return jsonify({'message': 'City updated successfully', 'city': city.serialize()}), 200
+    except IntegrityError as e:
+        db.session.rollback()
+        current_app.logger.warning(
+            f"Integrity error on update city: {str(e.orig)}")
+        raise APIException("Database integrity error", status_code=400)
+    except Exception:
+        db.session.rollback()
+        handle_unexpected_error('updating city')
+
+
+@api.route('/cities/<string:city_id>', methods=['DELETE'])
+def delete_city(city_id):
+    """
+    Delete a city by its ID.
+    Args:
+        city_id (str): City ID.
+    Raises:
+        APIException: If the city does not exist or a database error occurs.
+    Returns:
+        Response: JSON with success message.
+    """
+    city = get_object_or_404(
+        City, unique_field_value=city_id, not_found_message='City not found')
+    try:
+        db.session.delete(city)
+        db.session.commit()
+        return jsonify({'message': 'City deleted successfully'}), 200
+    except Exception:
+        db.session.rollback()
+        handle_unexpected_error('deleting city')
+
+
+@api.route('/poiimages', methods=['GET'])
+def list_poi_images():
+    """
+    List all POI images.
+    Returns:
+        JSON list of POI images. Returns an empty list if none are found.
     """
     try:
-        poi = get_object_or_404(Poi, poi_id, 'POI not found')
-        tags = db.session.query(Tag).join(PoiTag, PoiTag.tag_id == Tag.id)\
-            .filter(PoiTag.poi_id == poi.id).all()
-        return jsonify([t.serialize() for t in tags]), 200
+        images = PoiImage.query.all()
+        return jsonify([img.serialize() for img in images]), 200
     except APIException:
         raise
     except Exception:
-        handle_unexpected_error('retrieving tags of POI')
+        handle_unexpected_error('listing POI images')
