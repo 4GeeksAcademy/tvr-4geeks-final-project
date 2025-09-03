@@ -8,6 +8,11 @@ db = SQLAlchemy()
 
 
 class User(db.Model):
+    """Represents a registered user.
+
+    Stores authentication details and relations to favorite and visited
+    points of interest.
+    """
     __tablename__ = 'user'
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
@@ -41,6 +46,10 @@ class User(db.Model):
 
 
 class Country(db.Model):
+    """Country where points of interest are located.
+
+    Holds the country's basic information and its related cities.
+    """
     __tablename__ = 'country'
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
@@ -58,6 +67,10 @@ class Country(db.Model):
 
 
 class City(db.Model):
+    """City belonging to a country.
+
+    Aggregates points of interest and links back to its country.
+    """
     __tablename__ = 'city'
     __table_args__ = (
         db.UniqueConstraint('name', 'country_id', name='uq_city_name_country'),
@@ -85,6 +98,7 @@ class City(db.Model):
 
 
 class PoiTag(db.Model):
+    """Association table linking POIs with tags."""
     __tablename__ = 'poi_tag'
     poi_id: Mapped[str] = mapped_column(
         db.ForeignKey('poi.id'), primary_key=True)
@@ -95,6 +109,7 @@ class PoiTag(db.Model):
 
 
 class Tag(db.Model):
+    """Descriptive label that can be attached to POIs."""
     __tablename__ = 'tag'
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(240), nullable=False, unique=True)
@@ -109,6 +124,11 @@ class Tag(db.Model):
 
 
 class Poi(db.Model):
+    """Point of interest within a city.
+
+    Contains location data and relations to images, tags, favorites and
+    visited records.
+    """
     __tablename__ = 'poi'
     __table_args__ = (
         db.UniqueConstraint('name', 'city_id', name='uq_poi_name_city'),
@@ -144,6 +164,7 @@ class Poi(db.Model):
 
 
 class PoiImage(db.Model):
+    """Image URL associated with a specific POI."""
     __tablename__ = 'poi_image'
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     url: Mapped[str] = mapped_column(String(240), nullable=False)
@@ -160,6 +181,7 @@ class PoiImage(db.Model):
 
 
 class Favorite(db.Model):
+    """Join table mapping users to their favorite POIs."""
     __tablename__ = 'favorite'
     user_id: Mapped[str] = mapped_column(db.ForeignKey(
         'user.id'), nullable=False, primary_key=True)
@@ -176,6 +198,7 @@ class Favorite(db.Model):
 
 
 class Visited(db.Model):
+    """Join table mapping users to POIs they have visited."""
     __tablename__ = 'visited'
     user_id: Mapped[str] = mapped_column(db.ForeignKey(
         'user.id'), nullable=False, primary_key=True)

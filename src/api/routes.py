@@ -124,6 +124,8 @@ def normalize_body_to_list(body):
 def register():
     """
     Register a new user.
+    Args:
+        None.
     Body:
         - name (str): The full name of the user.
         - user_name (str): The username of the user.
@@ -135,7 +137,7 @@ def register():
     Raises:
         APIException: If required fields are missing, the email/username already exists, or the birth_date format is invalid.
     Returns:
-        Response: JSON with the created user or an error message.
+        Response: JSON with the created user and a success message.
     """
     body = request.get_json()
     body = require_json_object(body, context='register')
@@ -188,15 +190,15 @@ def login():
     """
     Log in a user.
     Args:
-        None (expects a JSON body with credentials).
+        None.
     Body:
-        - user_name: Optional. The username of the user (string).
-        - email: Optional. The email address of the user (string).
-        - password: The password for the user account (string).
+        - user_name (str, optional): Username of the user.
+        - email (str, optional): Email address of the user.
+        - password (str): Password for the user account.
     Raises:
         APIException: If credentials are missing or invalid.
     Returns:
-        Response: JSON with an access token or an error message.
+        Response: JSON with an access token and a success message.
     """
     body = request.get_json()
     body = require_json_object(body, context='login')
@@ -225,13 +227,15 @@ def my_profile():
     Retrieve the authenticated user's profile.
     Args:
         None.
+    Body:
+        None.
     Raises:
         APIException: If authentication fails.
     Returns:
-        Response: JSON with the user's profile data.
+        Response: JSON with the user's profile data and a success message.
     """
     user = get_authenticated_user()
-    return jsonify(user.serialize()), 200
+    return jsonify({'message': 'Profile retrieved successfully', 'user': user.serialize()}), 200
 
 
 @api.route('/myProfile', methods=['PUT'])
@@ -240,16 +244,16 @@ def update_profile():
     """
     Update the authenticated user's profile.
     Args:
-        None (expects a JSON body with fields to update).
+        None.
     Body:
-        - user_name: Optional. The new username for the user (string).
-        - email: Optional. The new email address for the user (string).
-        - location: Optional. The new location for the user (string).
-        - password: Optional. The new password for the user account (string).
+        - user_name (str, optional): New username for the user.
+        - email (str, optional): New email address.
+        - location (str, optional): New location for the user.
+        - password (str, optional): New password for the account.
     Raises:
         APIException: If authentication fails or the data is invalid.
     Returns:
-        Response: JSON with the updated user data or an error message.
+        Response: JSON with the updated user data and a success message.
     """
     user = get_authenticated_user()
     body = request.get_json()
@@ -286,12 +290,18 @@ def update_profile():
 def list_users():
     """
     List users.
+    Args:
+        None.
+    Body:
+        None.
+    Raises:
+        APIException: If an unexpected error occurs.
     Returns:
-        JSON list of users. Returns an empty list if none are found.
+        Response: JSON list of users and a success message. Returns an empty list if none are found.
     """
     try:
         users = User.query.all()
-        return jsonify([user.serialize() for user in users]), 200
+        return jsonify({'message': 'Success', 'users': [user.serialize() for user in users]}), 200
     except APIException:
         raise
     except Exception:
@@ -303,19 +313,19 @@ def add_user():
     """
     Add a new user.
     Args:
-        None (expects a JSON body with user data).
+        None.
     Body:
-        - name: Full name of the user (string).
-        - user_name: Username (string).
-        - email: Email address (string).
-        - password: Password (string).
-        - birth_date: Birth date mm/dd/yyyy (string).
-        - location: Optional. Location (string).
-        - role: Optional. Role (string).
+        - name (str): Full name of the user.
+        - user_name (str): Username.
+        - email (str): Email address.
+        - password (str): Password.
+        - birth_date (str): Birth date mm/dd/yyyy.
+        - location (str, optional): Location.
+        - role (str, optional): Role.
     Raises:
         APIException: If required fields are missing or email/username already exists.
     Returns:
-        Response: JSON with the created user or error message.
+        Response: JSON with the created user and a success message.
     """
     body = request.get_json()
     body = require_json_object(body, context='creating user')
@@ -393,10 +403,14 @@ def delete_user(username):
 def favorites():
     """
     Retrieve the authenticated user's favorite POIs.
-    Returns:
-        JSON list with pairs [poi_id, poi_name]. Returns an empty list if none are found.
+    Args:
+        None.
+    Body:
+        None.
     Raises:
         APIException: If an unexpected error occurs.
+    Returns:
+        Response: JSON list of pairs [poi_id, poi_name]. Returns an empty list if none are found.
     """
     user = get_authenticated_user()
     try:
@@ -460,9 +474,11 @@ def remove_favorite(poi_id):
     """
     Remove a POI from the authenticated user's favorites.
     Args:
-        None (expects a JSON body with poi_id).
+        poi_id (str): POI ID.
+    Body:
+        None.
     Raises:
-        APIException: If authentication fails, required fields are missing, or favorite not found.
+        APIException: If authentication fails or the favorite is not found.
     Returns:
         Response: JSON with success or error message.
     """
@@ -485,13 +501,17 @@ def remove_favorite(poi_id):
 def get_pois():
     """
     Retrieve POIs with optional filters via query string.
-    Supported filters:
-      - name: partial match (ilike) on POI name.
-      - tag_name: exact match.
-      - country_name: exact match.
-      - city_name: exact match.
+    Args:
+        None.
+    Query Parameters:
+        - name (str, optional): Partial match on POI name.
+        - tag_name (str, optional): Exact match on tag name.
+        - country_name (str, optional): Exact match on country name.
+        - city_name (str, optional): Exact match on city name.
+    Raises:
+        APIException: If an unexpected error occurs.
     Returns:
-      JSON list of POIs. Returns an empty list if none are found.
+        Response: JSON list of POIs. Returns an empty list if none are found.
     """
     try:
         q = Poi.query
@@ -529,9 +549,11 @@ def get_poi(poi_id):
     """
     Retrieve details of a POI by its ID.
     Args:
-        poi_id (str): The POI's ID.
+        poi_id (str): POI ID.
+    Body:
+        None.
     Raises:
-        APIException: If POI not found.
+        APIException: If POI is not found.
     Returns:
         Response: JSON with POI details.
     """
@@ -552,10 +574,14 @@ def get_poi(poi_id):
 def get_countries():
     """
     Retrieve countries with optional filters via query string.
-    Supported filters:
-      - name: partial match (ilike) on country name.
+    Args:
+        None.
+    Query Parameters:
+        - name (str, optional): Partial match on country name.
+    Raises:
+        APIException: If an unexpected error occurs.
     Returns:
-      JSON list of countries. Returns an empty list if none are found.
+        Response: JSON list of countries. Returns an empty list if none are found.
     """
     try:
         q = Country.query
@@ -575,9 +601,11 @@ def get_country(country_name):
     """
     Retrieve details of a country by its name.
     Args:
-        country_name (str): The country's name.
+        country_name (str): Country name.
+    Body:
+        None.
     Raises:
-        APIException: If country not found.
+        APIException: If the country is not found.
     Returns:
         Response: JSON with country details.
     """
@@ -599,12 +627,16 @@ def get_country(country_name):
 def get_cities():
     """
     Retrieve cities with optional filters via query string.
-    Supported filters:
-      - season: exact match.
-      - country_name: exact match.
-      - name: partial match (ilike) on city name.
+    Args:
+        None.
+    Query Parameters:
+        - season (str, optional): Exact match on preferred season.
+        - country_name (str, optional): Exact match on country name.
+        - name (str, optional): Partial match on city name.
+    Raises:
+        APIException: If an unexpected error occurs.
     Returns:
-      JSON list of cities. Returns an empty list if none are found.
+        Response: JSON list of cities. Returns an empty list if none are found.
     """
     try:
         q = City.query
@@ -635,9 +667,11 @@ def get_city(city_id):
     """
     Retrieve details of a city by its ID.
     Args:
-        city_id (str): The city's ID.
+        city_id (str): City ID.
+    Body:
+        None.
     Raises:
-        APIException: If city not found.
+        APIException: If the city is not found.
     Returns:
         Response: JSON with city details.
     """
@@ -658,8 +692,14 @@ def get_city(city_id):
 def get_popular_pois():
     """
     Retrieve a random list of up to 20 POIs.
+    Args:
+        None.
+    Body:
+        None.
+    Raises:
+        APIException: If an unexpected error occurs.
     Returns:
-        JSON list of POIs. Returns an empty list if none are found.
+        Response: JSON list of POIs. Returns an empty list if none are found.
     """
     try:
         pois = Poi.query.order_by(db.func.random()).limit(20).all()
@@ -675,8 +715,14 @@ def get_popular_pois():
 def get_visited_pois():
     """
     Retrieve the authenticated user's visited POIs.
+    Args:
+        None.
+    Body:
+        None.
+    Raises:
+        APIException: If an unexpected error occurs.
     Returns:
-        JSON list of visited POIs. Returns an empty list if none are found.
+        Response: JSON list of visited POIs. Returns an empty list if none are found.
     """
     user = get_authenticated_user()
     try:
@@ -765,12 +811,14 @@ def delete_visited_poi(poi_id):
 def create_tag():
     """
     Create one or more tags.
+    Args:
+        None.
     Body:
-      - name (str): Tag name (unique).
-    Errors:
-      - 400 if a tag with the same name already exists.
+        - name (str): Tag name (unique).
+    Raises:
+        APIException: If a tag with the same name already exists or a database error occurs.
     Returns:
-      Response: JSON with the created tags.
+        Response: JSON with the created tags and a success message.
     """
     body = request.get_json()
     items = normalize_body_to_list(body)
@@ -801,8 +849,14 @@ def create_tag():
 def list_tags():
     """
     List all tags.
+    Args:
+        None.
+    Body:
+        None.
+    Raises:
+        APIException: If an unexpected error occurs.
     Returns:
-        JSON list of tags. Returns an empty list if none are found.
+        Response: JSON list of tags. Returns an empty list if none are found.
     """
     try:
         tags = Tag.query.all()
@@ -819,8 +873,10 @@ def get_tag(tag_name):
     Retrieve a tag by its name.
     Args:
         tag_name (str): Tag name.
+    Body:
+        None.
     Raises:
-        APIException: If tag not found.
+        APIException: If the tag is not found.
     Returns:
         Response: JSON with tag details.
     """
@@ -844,8 +900,10 @@ def delete_tag(tag_name):
     Delete a tag by its name.
     Args:
         tag_name (str): Tag name.
+    Body:
+        None.
     Raises:
-        APIException: If tag not found.
+        APIException: If the tag is not found.
     Returns:
         Response: JSON with success or error message.
     """
@@ -871,8 +929,10 @@ def add_tag_to_poi(poi_id, tag_name):
     Args:
         poi_id (str): POI ID.
         tag_name (str): Tag name.
+    Body:
+        None.
     Raises:
-        APIException: If POI or Tag not found, or already associated.
+        APIException: If POI or tag is not found, or if already associated.
     Returns:
         Response: JSON with success message.
     """
@@ -910,8 +970,10 @@ def remove_tag_from_poi(poi_id, tag_name):
     Args:
         poi_id (str): POI ID.
         tag_name (str): Tag name.
+    Body:
+        None.
     Raises:
-        APIException: If POI or Tag not found, or not associated.
+        APIException: If POI or tag is not found, or if they are not associated.
     Returns:
         Response: JSON with success message.
     """
@@ -947,10 +1009,12 @@ def get_tags_of_poi(poi_id):
     Retrieve all tags associated with a given POI.
     Args:
         poi_id (str): POI ID.
-    Returns:
-        JSON list of tags. Returns an empty list if none are associated.
+    Body:
+        None.
     Raises:
         APIException: If the POI does not exist or an unexpected error occurs.
+    Returns:
+        Response: JSON list of tags. Returns an empty list if none are associated.
     """
     try:
         poi = get_object_or_404(
@@ -971,13 +1035,15 @@ def get_tags_of_poi(poi_id):
 def create_poi_image():
     """
     Create one or more POI images.
+    Args:
+        None.
     Body:
-      - url (str): Image URL.
-      - poi_id (str): Associated POI ID.
-    Errors:
-      - 404 if the POI does not exist.
+        - url (str): Image URL.
+        - poi_id (str): Associated POI ID.
+    Raises:
+        APIException: If the POI does not exist or a database error occurs.
     Returns:
-      Response: JSON with the created POI images.
+        Response: JSON with the created POI images and a success message.
     """
     body = request.get_json()
     items = normalize_body_to_list(body)
@@ -1010,8 +1076,10 @@ def get_poi_image(image_id):
     Retrieve a POI image by its ID.
     Args:
         image_id (str): POI image ID.
+    Body:
+        None.
     Raises:
-        APIException: If POI image not found.
+        APIException: If the POI image is not found.
     Returns:
         Response: JSON with POI image details.
     """
@@ -1034,8 +1102,10 @@ def delete_poi_image(image_id):
     Delete a POI image by its ID.
     Args:
         image_id (str): POI image ID.
+    Body:
+        None.
     Raises:
-        APIException: If POI image not found.
+        APIException: If the POI image is not found.
     Returns:
         Response: JSON with success or error message.
     """
@@ -1055,17 +1125,18 @@ def delete_poi_image(image_id):
 def create_poi():
     """
     Create one or more points of interest (POIs).
+    Args:
+        None.
     Body:
         - name (str): POI name.
         - description (str): POI description.
         - latitude (str): Latitude.
         - longitude (str): Longitude.
         - city_id (str): City ID where the POI belongs.
-    Errors:
-        - 404 if the city does not exist.
-        - 400 if a POI with the same name already exists in the city.
+    Raises:
+        APIException: If the city does not exist, a duplicate name exists in the same city, or a database error occurs.
     Returns:
-        Response: JSON with the created POIs.
+        Response: JSON with the created POIs and a success message.
     """
     body = request.get_json()
     items = normalize_body_to_list(body)
@@ -1073,7 +1144,8 @@ def create_poi():
     created = []
     for item in items:
         name = item.get('name')
-        require_body_fields(item, ['name', 'description', 'latitude', 'longitude', 'city_id'], item_name=name)
+        require_body_fields(
+            item, ['name', 'description', 'latitude', 'longitude', 'city_id'], item_name=name)
         city = get_object_or_404(
             City,
             unique_field_value=item.get('city_id'),
@@ -1106,6 +1178,7 @@ def create_poi():
         db.session.rollback()
         handle_unexpected_error('creating POIs')
 
+
 @api.route('/pois/<string:poi_id>', methods=['PUT'])
 def update_poi(poi_id):
     """
@@ -1119,7 +1192,7 @@ def update_poi(poi_id):
         - longitude (str, optional): Longitude.
         - city_id (str, optional): City ID.
     Raises:
-        APIException: If POI or provided city does not exist, or a database error occurs.
+        APIException: If the POI or provided city does not exist, or a database error occurs.
     Returns:
         Response: JSON with the updated POI.
     """
@@ -1158,6 +1231,8 @@ def delete_poi(poi_id):
     Delete a point of interest (POI) by its ID.
     Args:
         poi_id (str): POI ID.
+    Body:
+        None.
     Raises:
         APIException: If the POI does not exist or a database error occurs.
     Returns:
@@ -1178,13 +1253,15 @@ def delete_poi(poi_id):
 def create_country():
     """
     Create one or more countries.
+    Args:
+        None.
     Body:
         - name (str): Country name (unique).
         - img (str): Country image URL.
-    Errors:
-        - 400 if a country with the same name already exists.
+    Raises:
+        APIException: If a country with the same name already exists or a database error occurs.
     Returns:
-        Response: JSON with the created countries.
+        Response: JSON with the created countries and a success message.
     """
     body = request.get_json()
     items = normalize_body_to_list(body)
@@ -1194,7 +1271,8 @@ def create_country():
         require_body_fields(item, ['name', 'img'], item_name=name)
         existing_country = Country.query.filter_by(name=name).first()
         if existing_country:
-            raise APIException(f'Country {name} already exists', status_code=400)
+            raise APIException(
+                f'Country {name} already exists', status_code=400)
         country = Country(id=str(uuid.uuid4()), name=name, img=item.get('img'))
         created.append(country)
     try:
@@ -1221,7 +1299,7 @@ def update_country(country_name):
         - name (str, optional): New country name.
         - img (str, optional): New image URL.
     Raises:
-        APIException: If the country does not exist, new name conflicts, or a database error occurs.
+        APIException: If the country does not exist, the new name conflicts, or a database error occurs.
     Returns:
         Response: JSON with the updated country.
     """
@@ -1256,6 +1334,8 @@ def delete_country(country_name):
     Delete a country by its name.
     Args:
         country_name (str): Country name.
+    Body:
+        None.
     Raises:
         APIException: If the country does not exist or a database error occurs.
     Returns:
@@ -1276,16 +1356,17 @@ def delete_country(country_name):
 def create_city():
     """
     Create one or more cities.
+    Args:
+        None.
     Body:
         - name (str): City name.
         - img (str): City image URL.
         - season (str): Preferred season.
         - country_id (str): Country ID.
-    Errors:
-        - 404 if the provided country does not exist.
-        - 400 if a city with the same name already exists in the country.
+    Raises:
+        APIException: If the provided country does not exist, a duplicate name exists in the same country, or a database error occurs.
     Returns:
-        Response: JSON with the created cities.
+        Response: JSON with the created cities and a success message.
     """
     body = request.get_json()
     items = normalize_body_to_list(body)
@@ -1293,13 +1374,15 @@ def create_city():
     created = []
     for item in items:
         name = item.get('name')
-        require_body_fields(item, ['name', 'img', 'season', 'country_id'], item_name=name)
+        require_body_fields(
+            item, ['name', 'img', 'season', 'country_id'], item_name=name)
         country = get_object_or_404(
             Country,
             unique_field_value=item.get('country_id'),
             not_found_message='Country not found'
         )
-        existing = City.query.filter_by(name=name, country_id=country.id).first()
+        existing = City.query.filter_by(
+            name=name, country_id=country.id).first()
         if existing:
             raise APIException(
                 f"City '{name}' already exists in this country", status_code=400)
@@ -1375,6 +1458,8 @@ def delete_city(city_id):
     Delete a city by its ID.
     Args:
         city_id (str): City ID.
+    Body:
+        None.
     Raises:
         APIException: If the city does not exist or a database error occurs.
     Returns:
@@ -1395,8 +1480,14 @@ def delete_city(city_id):
 def list_poi_images():
     """
     List all POI images.
+    Args:
+        None.
+    Body:
+        None.
+    Raises:
+        APIException: If an unexpected error occurs.
     Returns:
-        JSON list of POI images. Returns an empty list if none are found.
+        Response: JSON list of POI images. Returns an empty list if none are found.
     """
     try:
         images = PoiImage.query.all()
@@ -1405,3 +1496,46 @@ def list_poi_images():
         raise
     except Exception:
         handle_unexpected_error('listing POI images')
+
+
+@api.route('/poiimages/<string:image_id>', methods=['PUT'])
+def update_poi_image(image_id):
+    """
+    Update a POI image by its ID.
+    Args:
+        image_id (str): POI image ID.
+    Body:
+        - url (str, optional): Image URL.
+        - poi_id (str, optional): Related POI ID.
+    Raises:
+        APIException: If the image or provided POI does not exist, or a database error occurs.
+    Returns:
+        Response: JSON with the updated POI image.
+    """
+    poi_image = get_object_or_404(
+        PoiImage,
+        unique_field_value=image_id,
+        not_found_message='POI image not found'
+    )
+    body = request.get_json()
+    body = require_json_object(body, context='updating POI image')
+    if 'url' in body and body.get('url'):
+        poi_image.url = body.get('url')
+    if 'poi_id' in body and body.get('poi_id'):
+        poi = get_object_or_404(
+            Poi,
+            unique_field_value=body.get('poi_id'),
+            not_found_message='POI not found'
+        )
+        poi_image.poi_id = poi.id
+    try:
+        db.session.commit()
+        return jsonify({'message': 'POI image updated successfully', 'image': poi_image.serialize()}), 200
+    except IntegrityError as e:
+        db.session.rollback()
+        current_app.logger.warning(
+            f"Integrity error on update POI image: {str(e.orig)}")
+        raise APIException("Database integrity error", status_code=400)
+    except Exception:
+        db.session.rollback()
+        handle_unexpected_error('updating POI image')
