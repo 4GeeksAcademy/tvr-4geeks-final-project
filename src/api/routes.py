@@ -766,9 +766,11 @@ def create_tag():
     """
     Create one or more tags.
     Body:
-      - Required: name
+      - name (str): Tag name (unique).
     Errors:
       - 400 if a tag with the same name already exists.
+    Returns:
+      Response: JSON with the created tags.
     """
     body = request.get_json()
     items = normalize_body_to_list(body)
@@ -970,9 +972,12 @@ def create_poi_image():
     """
     Create one or more POI images.
     Body:
-      - Required: url, poi_id
+      - url (str): Image URL.
+      - poi_id (str): Associated POI ID.
     Errors:
       - 404 if the POI does not exist.
+    Returns:
+      Response: JSON with the created POI images.
     """
     body = request.get_json()
     items = normalize_body_to_list(body)
@@ -1049,37 +1054,49 @@ def delete_poi_image(image_id):
 @api.route('/pois', methods=['POST'])
 def create_poi():
     """
-    Create a new point of interest (POI).
+    Create one or more points of interest (POIs).
     Body:
         - name (str): POI name.
         - description (str): POI description.
         - latitude (str): Latitude.
         - longitude (str): Longitude.
         - city_id (str): City ID where the POI belongs.
-    Raises:
-        APIException: If required fields are missing, city does not exist, or a database error occurs.
+    Errors:
+        - 404 if the city does not exist.
+        - 400 if a POI with the same name already exists in the city.
     Returns:
-        Response: JSON with the created POI.
+        Response: JSON with the created POIs.
     """
     body = request.get_json()
-    body = require_json_object(body, context='creating POI')
-    require_body_fields(
-        body, ['name', 'description', 'latitude', 'longitude', 'city_id'])
-    city = get_object_or_404(City, unique_field_value=body.get(
-        'city_id'), not_found_message='City not found')
-    try:
-        poi_id = str(uuid.uuid4())
+    items = normalize_body_to_list(body)
+
+    created = []
+    for item in items:
+        name = item.get('name')
+        require_body_fields(item, ['name', 'description', 'latitude', 'longitude', 'city_id'], item_name=name)
+        city = get_object_or_404(
+            City,
+            unique_field_value=item.get('city_id'),
+            not_found_message='City not found'
+        )
+        existing = Poi.query.filter_by(name=name, city_id=city.id).first()
+        if existing:
+            raise APIException(
+                f"POI '{name}' already exists in this city", status_code=400)
         poi = Poi(
-            id=poi_id,
-            name=body.get('name'),
-            description=body.get('description'),
-            latitude=body.get('latitude'),
-            longitude=body.get('longitude'),
+            id=str(uuid.uuid4()),
+            name=name,
+            description=item.get('description'),
+            latitude=item.get('latitude'),
+            longitude=item.get('longitude'),
             city_id=city.id
         )
-        db.session.add(poi)
+        created.append(poi)
+    try:
+        db.session.add_all(created)
         db.session.commit()
-        return jsonify({'message': 'POI created successfully', 'poi': poi.serialize()}), 201
+        return jsonify({'message': 'POIs created successfully',
+                        'created': [poi.serialize() for poi in created]}), 201
     except IntegrityError as e:
         db.session.rollback()
         current_app.logger.warning(
@@ -1087,8 +1104,7 @@ def create_poi():
         raise APIException("Database integrity error", status_code=400)
     except Exception:
         db.session.rollback()
-        handle_unexpected_error('creating POI')
-
+        handle_unexpected_error('creating POIs')
 
 @api.route('/pois/<string:poi_id>', methods=['PUT'])
 def update_poi(poi_id):
@@ -1161,27 +1177,30 @@ def delete_poi(poi_id):
 @api.route('/countries', methods=['POST'])
 def create_country():
     """
-    Create a new country.
+    Create one or more countries.
     Body:
         - name (str): Country name (unique).
         - img (str): Country image URL.
-    Raises:
-        APIException: If required fields are missing, the name already exists, or a database error occurs.
+    Errors:
+        - 400 if a country with the same name already exists.
     Returns:
-        Response: JSON with the created country.
+        Response: JSON with the created countries.
     """
     body = request.get_json()
-    body = require_json_object(body, context='creating country')
-    require_body_fields(body, ['name', 'img'])
-    existing = Country.query.filter_by(name=body.get('name')).first()
-    if existing:
-        raise APIException('Country name already exists', status_code=400)
+    items = normalize_body_to_list(body)
+    created = []
+    for item in items:
+        name = item.get('name')
+        require_body_fields(item, ['name', 'img'], item_name=name)
+        existing_country = Country.query.filter_by(name=name).first()
+        if existing_country:
+            raise APIException(f'Country {name} already exists', status_code=400)
+        country = Country(id=str(uuid.uuid4()), name=name, img=item.get('img'))
+        created.append(country)
     try:
-        country = Country(id=str(uuid.uuid4()), name=body.get(
-            'name'), img=body.get('img'))
-        db.session.add(country)
+        db.session.add_all(created)
         db.session.commit()
-        return jsonify({'message': 'Country created successfully', 'country': country.serialize()}), 201
+        return jsonify({'message': 'Countries created successfully', 'created': [country.serialize() for country in created]}), 201
     except IntegrityError as e:
         db.session.rollback()
         current_app.logger.warning(
@@ -1189,7 +1208,7 @@ def create_country():
         raise APIException("Database integrity error", status_code=400)
     except Exception:
         db.session.rollback()
-        handle_unexpected_error('creating country')
+        handle_unexpected_error('creating countries')
 
 
 @api.route('/countries/<string:country_name>', methods=['PUT'])
@@ -1256,28 +1275,47 @@ def delete_country(country_name):
 @api.route('/cities', methods=['POST'])
 def create_city():
     """
-    Create a new city.
+    Create one or more cities.
     Body:
         - name (str): City name.
         - img (str): City image URL.
         - season (str): Preferred season.
         - country_id (str): Country ID.
-    Raises:
-        APIException: If required fields are missing, country does not exist, or a database error occurs.
+    Errors:
+        - 404 if the provided country does not exist.
+        - 400 if a city with the same name already exists in the country.
     Returns:
-        Response: JSON with the created city.
+        Response: JSON with the created cities.
     """
     body = request.get_json()
-    body = require_json_object(body, context='creating city')
-    require_body_fields(body, ['name', 'img', 'season', 'country_id'])
-    country = get_object_or_404(Country, unique_field_value=body.get(
-        'country_id'), not_found_message='Country not found')
+    items = normalize_body_to_list(body)
+
+    created = []
+    for item in items:
+        name = item.get('name')
+        require_body_fields(item, ['name', 'img', 'season', 'country_id'], item_name=name)
+        country = get_object_or_404(
+            Country,
+            unique_field_value=item.get('country_id'),
+            not_found_message='Country not found'
+        )
+        existing = City.query.filter_by(name=name, country_id=country.id).first()
+        if existing:
+            raise APIException(
+                f"City '{name}' already exists in this country", status_code=400)
+        city = City(
+            id=str(uuid.uuid4()),
+            name=name,
+            img=item.get('img'),
+            season=item.get('season'),
+            country_id=country.id
+        )
+        created.append(city)
     try:
-        city = City(id=str(uuid.uuid4()), name=body.get('name'), img=body.get(
-            'img'), season=body.get('season'), country_id=country.id)
-        db.session.add(city)
+        db.session.add_all(created)
         db.session.commit()
-        return jsonify({'message': 'City created successfully', 'city': city.serialize()}), 201
+        return jsonify({'message': 'Cities created successfully',
+                        'created': [city.serialize() for city in created]}), 201
     except IntegrityError as e:
         db.session.rollback()
         current_app.logger.warning(
@@ -1285,7 +1323,7 @@ def create_city():
         raise APIException("Database integrity error", status_code=400)
     except Exception:
         db.session.rollback()
-        handle_unexpected_error('creating city')
+        handle_unexpected_error('creating cities')
 
 
 @api.route('/cities/<string:city_id>', methods=['PUT'])
