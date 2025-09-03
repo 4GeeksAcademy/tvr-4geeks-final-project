@@ -416,7 +416,7 @@ def favorites():
     try:
         favorites = db.session.query(Favorite, Poi).join(
             Poi, Favorite.poi_id == Poi.id).filter(Favorite.user_id == user.id).all()
-        return jsonify([[poi.id, poi.name] for _, poi in favorites]), 200
+        return jsonify({'message': 'Favorites retrieved successfully', 'favorites': [[poi.id, poi.name] for _, poi in favorites]}), 200
     except APIException:
         raise
     except Exception:
@@ -537,7 +537,7 @@ def get_pois():
                 Tag.name == tag_name)
 
         pois = q.all()
-        return jsonify([poi.serialize() for poi in pois]), 200
+        return jsonify({'message': 'POIs retrieved successfully', 'pois': [poi.serialize() for poi in pois]}), 200
     except APIException:
         raise
     except Exception:
@@ -563,7 +563,7 @@ def get_poi(poi_id):
             unique_field_value=poi_id,
             not_found_message='Point of interest not found'
         )
-        return jsonify(poi.serialize()), 200
+        return jsonify({'message': 'POI retrieved successfully', 'poi': poi.serialize()}), 200
     except APIException:
         raise
     except Exception:
@@ -585,11 +585,12 @@ def get_countries():
     """
     try:
         q = Country.query
+
         name = request.args.get('name')
         if name:
             q = q.filter(Country.name.ilike(f'%{name}%'))
         countries = q.all()
-        return jsonify([country.serialize() for country in countries]), 200
+        return jsonify({'message': 'Countries retrieved successfully', 'countries': [country.serialize() for country in countries]}), 200
     except APIException:
         raise
     except Exception:
@@ -616,7 +617,7 @@ def get_country(country_name):
             not_found_message='Country not found',
             field_name='name'
         )
-        return jsonify(country.serialize()), 200
+        return jsonify({'message': 'Country retrieved successfully', 'country': country.serialize()}), 200
     except APIException:
         raise
     except Exception:
@@ -655,7 +656,7 @@ def get_cities():
             q = q.filter(City.name.ilike(f'%{name}%'))
 
         cities = q.all()
-        return jsonify([city.serialize() for city in cities]), 200
+        return jsonify({'message': 'Cities retrieved successfully', 'cities': [city.serialize() for city in cities]}), 200
     except APIException:
         raise
     except Exception:
@@ -681,7 +682,7 @@ def get_city(city_id):
             unique_field_value=city_id,
             not_found_message='City not found'
         )
-        return jsonify(city.serialize()), 200
+        return jsonify({'message': 'City retrieved successfully', 'city': city.serialize()}), 200
     except APIException:
         raise
     except Exception:
@@ -703,7 +704,7 @@ def get_popular_pois():
     """
     try:
         pois = Poi.query.order_by(db.func.random()).limit(20).all()
-        return jsonify([poi.serialize() for poi in pois]), 200
+        return jsonify({'message': 'Popular POIs retrieved successfully', 'pois': [poi.serialize() for poi in pois]}), 200
     except APIException:
         raise
     except Exception:
@@ -728,7 +729,7 @@ def get_visited_pois():
     try:
         visited = db.session.query(Visited, Poi).join(
             Poi, Visited.poi_id == Poi.id).filter(Visited.user_id == user.id).all()
-        return jsonify([poi.serialize() for _, poi in visited]), 200
+        return jsonify({'message': 'Visited POIs retrieved successfully', 'visited': [poi.serialize() for _, poi in visited]}), 200
     except APIException:
         raise
     except Exception:
@@ -860,7 +861,7 @@ def list_tags():
     """
     try:
         tags = Tag.query.all()
-        return jsonify([tag.serialize() for tag in tags]), 200
+        return jsonify({'message': 'Tags retrieved successfully', 'tags': [tag.serialize() for tag in tags]}), 200
     except APIException:
         raise
     except Exception:
@@ -887,7 +888,7 @@ def get_tag(tag_name):
             not_found_message='Tag not found',
             field_name='name'
         )
-        return jsonify(tag.serialize()), 200
+        return jsonify({'message': 'Tag retrieved successfully', 'tag': tag.serialize()}), 200
     except APIException:
         raise
     except Exception:
@@ -1024,7 +1025,7 @@ def get_tags_of_poi(poi_id):
         )
         tags = db.session.query(Tag).join(PoiTag, PoiTag.tag_id == Tag.id)\
             .filter(PoiTag.poi_id == poi.id).all()
-        return jsonify([t.serialize() for t in tags]), 200
+        return jsonify({'message': 'Tags retrieved successfully', 'tags': [t.serialize() for t in tags]}), 200
     except APIException:
         raise
     except Exception:
@@ -1089,7 +1090,7 @@ def get_poi_image(image_id):
             unique_field_value=image_id,
             not_found_message='POI image not found'
         )
-        return jsonify(poi_image.serialize()), 200
+        return jsonify({'message': 'POI image retrieved successfully', 'image': poi_image.serialize()}), 200
     except APIException:
         raise
     except Exception:
@@ -1491,51 +1492,59 @@ def list_poi_images():
     """
     try:
         images = PoiImage.query.all()
-        return jsonify([img.serialize() for img in images]), 200
+        return jsonify({'message': 'POI images retrieved successfully', 'images': [img.serialize() for img in images]}), 200
     except APIException:
         raise
     except Exception:
         handle_unexpected_error('listing POI images')
 
 
-@api.route('/poiimages/<string:image_id>', methods=['PUT'])
-def update_poi_image(image_id):
+@api.route('/poiimages/<string:image_id>', methods=['GET'])
+def get_poi_image(image_id):
     """
-    Update a POI image by its ID.
+    Retrieve a POI image by its ID.
     Args:
         image_id (str): POI image ID.
     Body:
-        - url (str, optional): Image URL.
-        - poi_id (str, optional): Related POI ID.
+        None.
     Raises:
-        APIException: If the image or provided POI does not exist, or a database error occurs.
+        APIException: If the POI image is not found.
     Returns:
-        Response: JSON with the updated POI image.
+        Response: JSON with POI image details.
     """
-    poi_image = get_object_or_404(
-        PoiImage,
-        unique_field_value=image_id,
-        not_found_message='POI image not found'
-    )
-    body = request.get_json()
-    body = require_json_object(body, context='updating POI image')
-    if 'url' in body and body.get('url'):
-        poi_image.url = body.get('url')
-    if 'poi_id' in body and body.get('poi_id'):
-        poi = get_object_or_404(
-            Poi,
-            unique_field_value=body.get('poi_id'),
-            not_found_message='POI not found'
-        )
-        poi_image.poi_id = poi.id
     try:
+        poi_image = get_object_or_404(
+            PoiImage,
+            unique_field_value=image_id,
+            not_found_message='POI image not found'
+        )
+        return jsonify({'message': 'POI image retrieved successfully', 'image': poi_image.serialize()}), 200
+    except APIException:
+        raise
+    except Exception:
+        handle_unexpected_error('retrieving POI image')
+
+
+@api.route('/poiimages/<string:image_id>', methods=['DELETE'])
+def delete_poi_image(image_id):
+    """
+    Delete a POI image by its ID.
+    Args:
+        image_id (str): POI image ID.
+    Body:
+        None.
+    Raises:
+        APIException: If the POI image is not found.
+    Returns:
+        Response: JSON with success or error message.
+    """
+    poi_image = PoiImage.query.get(image_id)
+    if not poi_image:
+        raise APIException('POI image not found', status_code=404)
+    try:
+        db.session.delete(poi_image)
         db.session.commit()
-        return jsonify({'message': 'POI image updated successfully', 'image': poi_image.serialize()}), 200
-    except IntegrityError as e:
-        db.session.rollback()
-        current_app.logger.warning(
-            f"Integrity error on update POI image: {str(e.orig)}")
-        raise APIException("Database integrity error", status_code=400)
+        return jsonify({'message': 'POI image deleted successfully'}), 200
     except Exception:
         db.session.rollback()
-        handle_unexpected_error('updating POI image')
+        handle_unexpected_error('deleting POI image')
