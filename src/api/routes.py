@@ -115,6 +115,9 @@ def normalize_body_to_list(body):
     elif isinstance(body, list):
         if len(body) == 0:
             raise APIException('Input list cannot be empty', status_code=400)
+        for item in body:
+            if not isinstance(item, dict):
+                raise APIException('Each item must be a JSON object', status_code=400)
         return body
     else:
         raise APIException('Invalid input format', status_code=400)
@@ -258,6 +261,12 @@ def update_profile():
     user = get_authenticated_user()
     body = request.get_json()
     body = require_json_object(body, context='updating profile')
+    allowed_fields = {'user_name', 'email', 'location', 'password'}
+    if not body:
+        raise APIException('No valid fields supplied', status_code=400)
+    for field in body.keys():
+        if field not in allowed_fields:
+            raise APIException(f'Unexpected field: {field}', status_code=400)
     user_name = body.get('user_name')
     email = body.get('email')
     location = body.get('location')
@@ -301,7 +310,7 @@ def list_users():
     """
     try:
         users = User.query.all()
-        return jsonify({'message': 'Success', 'users': [user.serialize() for user in users]}), 200
+        return jsonify({'message': 'Users retrieved successfully', 'users': [user.serialize() for user in users]}), 200
     except APIException:
         raise
     except Exception:
@@ -824,9 +833,13 @@ def create_tag():
     body = request.get_json()
     items = normalize_body_to_list(body)
     created = []
+    seen_names = set()
     for item in items:
         name = item.get('name')
         require_body_fields(item, ['name'], item_name=name)
+        if name in seen_names:
+            raise APIException(f"Duplicate entry: {name}", status_code=400)
+        seen_names.add(name)
         existing_tag = Tag.query.filter_by(name=name).first()
         if existing_tag:
             raise APIException(f"Tag '{name}' already exists", status_code=400)
@@ -1050,10 +1063,15 @@ def create_poi_image():
     items = normalize_body_to_list(body)
 
     created = []
+    seen_pairs = set()
     for item in items:
         url = item.get('url')
         poi_id = item.get('poi_id')
         require_body_fields(item, ['url', 'poi_id'], item_name=url)
+        key = (url, poi_id)
+        if key in seen_pairs:
+            raise APIException(f"Duplicate entry: {url}", status_code=400)
+        seen_pairs.add(key)
         poi = get_object_or_404(
             Poi,
             unique_field_value=poi_id,
@@ -1143,10 +1161,15 @@ def create_poi():
     items = normalize_body_to_list(body)
 
     created = []
+    seen_pairs = set()
     for item in items:
         name = item.get('name')
         require_body_fields(
             item, ['name', 'description', 'latitude', 'longitude', 'city_id'], item_name=name)
+        key = (name, item.get('city_id'))
+        if key in seen_pairs:
+            raise APIException(f"Duplicate entry: {name}", status_code=400)
+        seen_pairs.add(key)
         city = get_object_or_404(
             City,
             unique_field_value=item.get('city_id'),
@@ -1201,6 +1224,12 @@ def update_poi(poi_id):
                             not_found_message='POI not found')
     body = request.get_json()
     body = require_json_object(body, context='updating POI')
+    allowed_fields = {'name', 'description', 'latitude', 'longitude', 'city_id'}
+    if not body:
+        raise APIException('No valid fields supplied', status_code=400)
+    for field in body.keys():
+        if field not in allowed_fields:
+            raise APIException(f'Unexpected field: {field}', status_code=400)
     if 'city_id' in body and body.get('city_id'):
         city = get_object_or_404(City, unique_field_value=body.get(
             'city_id'), not_found_message='City not found')
@@ -1267,9 +1296,13 @@ def create_country():
     body = request.get_json()
     items = normalize_body_to_list(body)
     created = []
+    seen_names = set()
     for item in items:
         name = item.get('name')
         require_body_fields(item, ['name', 'img'], item_name=name)
+        if name in seen_names:
+            raise APIException(f"Duplicate entry: {name}", status_code=400)
+        seen_names.add(name)
         existing_country = Country.query.filter_by(name=name).first()
         if existing_country:
             raise APIException(
@@ -1308,6 +1341,12 @@ def update_country(country_name):
                                 not_found_message='Country not found', field_name='name')
     body = request.get_json()
     body = require_json_object(body, context='updating country')
+    allowed_fields = {'name', 'img'}
+    if not body:
+        raise APIException('No valid fields supplied', status_code=400)
+    for field in body.keys():
+        if field not in allowed_fields:
+            raise APIException(f'Unexpected field: {field}', status_code=400)
     if 'name' in body and body.get('name'):
         existing = Country.query.filter(Country.name == body.get(
             'name'), Country.id != country.id).first()
@@ -1373,10 +1412,15 @@ def create_city():
     items = normalize_body_to_list(body)
 
     created = []
+    seen_pairs = set()
     for item in items:
         name = item.get('name')
         require_body_fields(
             item, ['name', 'img', 'season', 'country_id'], item_name=name)
+        key = (name, item.get('country_id'))
+        if key in seen_pairs:
+            raise APIException(f"Duplicate entry: {name}", status_code=400)
+        seen_pairs.add(key)
         country = get_object_or_404(
             Country,
             unique_field_value=item.get('country_id'),
@@ -1430,6 +1474,12 @@ def update_city(city_id):
         City, unique_field_value=city_id, not_found_message='City not found')
     body = request.get_json()
     body = require_json_object(body, context='updating city')
+    allowed_fields = {'name', 'img', 'season', 'country_id'}
+    if not body:
+        raise APIException('No valid fields supplied', status_code=400)
+    for field in body.keys():
+        if field not in allowed_fields:
+            raise APIException(f'Unexpected field: {field}', status_code=400)
     if 'country_id' in body and body.get('country_id'):
         country = get_object_or_404(Country, unique_field_value=body.get(
             'country_id'), not_found_message='Country not found')
