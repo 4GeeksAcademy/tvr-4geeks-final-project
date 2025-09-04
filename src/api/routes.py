@@ -118,17 +118,17 @@ def normalize_body_to_list(body):
     if isinstance(body, dict):
         return [body]
     
-    if not isinstance(body, list):
-        raise APIException('Invalid input format', status_code=400)
-    
-    if not body:
-        raise APIException('Input list cannot be empty', status_code=400)
-
-    for item in body:
-        if not isinstance(item, dict):
-            raise APIException('Each item must be a JSON object', status_code=400)
+    if isinstance(body, list):
+        if not body:
+            raise APIException('Input list cannot be empty', status_code=400)
+        for item in body:
+            if not isinstance(item, dict):
+                raise APIException(
+                    'Each item must be a JSON object', status_code=400)
+        return body
 
     return body
+    raise APIException('Invalid input format', status_code=400)
 
 
 @api.route('/register', methods=['POST'])
@@ -270,9 +270,11 @@ def update_profile():
     body = request.get_json()
     body = require_json_object(body, context='updating profile')
     allowed_fields = PROFILE_ALLOWED_FIELDS
-    provided_keys = set(body.keys())
-    if not provided_keys or not provided_keys.issubset(allowed_fields):
+    if not body:
         raise APIException('No valid fields supplied', status_code=400)
+    for field in body.keys():
+        if field not in allowed_fields:
+            raise APIException(f"Unexpected field: {field}", status_code=400)
     user_name = body.get('user_name')
     email = body.get('email')
     location = body.get('location')
@@ -982,6 +984,7 @@ def add_tag_to_poi(poi_id, tag_name):
     except APIException:
         raise
     except Exception:
+        db.session.rollback()
         handle_unexpected_error('adding tag to POI')
 
 
@@ -1022,6 +1025,7 @@ def remove_tag_from_poi(poi_id, tag_name):
     except APIException:
         raise
     except Exception:
+        db.session.rollback()
         handle_unexpected_error('removing tag from POI')
 
 
@@ -1071,15 +1075,15 @@ def create_poi_image():
     items = normalize_body_to_list(body)
 
     created = []
-    seen_pairs = set()
+    seen_keys = set()
     for item in items:
         url = item.get('url')
         poi_id = item.get('poi_id')
         require_body_fields(item, ['url', 'poi_id'], item_name=url)
-        key = (url, poi_id)
-        if key in seen_pairs:
-            raise APIException(f"Duplicate entry: {url}", status_code=400)
-        seen_pairs.add(key)
+         key = f"{url}:{poi_id}"
+        if key in seen_keys:
+            raise APIException(f"Duplicate entry: {key}", status_code=400)
+        seen_keys.add(key)
         poi = get_object_or_404(
             Poi,
             unique_field_value=poi_id,
@@ -1233,10 +1237,12 @@ def update_poi(poi_id):
     body = request.get_json()
     body = require_json_object(body, context='updating POI')
     allowed_fields = POI_ALLOWED_FIELDS
-    provided_keys = set(body.keys())
-    if not provided_keys or not provided_keys.issubset(allowed_fields):
+    if not body:
         raise APIException('No valid fields supplied', status_code=400)
-    
+    for field in body.keys():
+        if field not in allowed_fields:
+            raise APIException(f"Unexpected field: {field}", status_code=400)
+        
     # Determine prospective new values
     current_name = poi.name
     current_city_id = poi.city_id
@@ -1249,8 +1255,9 @@ def update_poi(poi_id):
         new_city_id = city.id
     new_name = body.get('name', current_name)
 
-    # Check for existing POI with same name and city
-    if new_name != current_name or new_city_id != current_city_id:
+    # Check for existing POI with same name and city when updating
+    if ('name' in body and body.get('name')) or (
+            'city_id' in body and body.get('city_id')):
         existing_poi = Poi.query.filter_by(
             name=new_name, city_id=new_city_id).first()
         if existing_poi and existing_poi.id != poi.id:
@@ -1368,9 +1375,11 @@ def update_country(country_name):
     body = request.get_json()
     body = require_json_object(body, context='updating country')
     allowed_fields = COUNTRY_ALLOWED_FIELDS
-    provided_keys = set(body.keys())
-    if not provided_keys or not provided_keys.issubset(allowed_fields):
+    if not body:
         raise APIException('No valid fields supplied', status_code=400)
+    for field in body.keys():
+        if field not in allowed_fields:
+            raise APIException(f"Unexpected field: {field}", status_code=400)
     if 'name' in body and body.get('name'):
         existing = Country.query.filter(Country.name == body.get(
             'name'), Country.id != country.id).first()
@@ -1499,9 +1508,11 @@ def update_city(city_id):
     body = request.get_json()
     body = require_json_object(body, context='updating city')
     allowed_fields = CITY_ALLOWED_FIELDS
-    provided_keys = set(body.keys())
-    if not provided_keys or not provided_keys.issubset(allowed_fields):
+    if not body:
         raise APIException('No valid fields supplied', status_code=400)
+    for field in body.keys():
+        if field not in allowed_fields:
+            raise APIException(f"Unexpected field: {field}", status_code=400)
     
     # Determine prospective new values
     current_name = city.name
@@ -1515,8 +1526,9 @@ def update_city(city_id):
         new_country_id = country.id
     new_name = body.get('name', current_name)
 
-    # Check for existing city with same name and country
-    if new_name != current_name or new_country_id != current_country_id:
+    # Check for existing city with same name and country when updating
+    if ('name' in body and body.get('name')) or (
+            'country_id' in body and body.get('country_id')):
         existing_city = City.query.filter_by(
             name=new_name, country_id=new_country_id).first()
         if existing_city and existing_city.id != city.id:
