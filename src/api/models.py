@@ -1,6 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
-from sqlalchemy import String
+from sqlalchemy import String, Float, Date
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import List
 
@@ -21,7 +20,7 @@ class User(db.Model):
     email: Mapped[str] = mapped_column(
         String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
-    birth_date: Mapped[datetime] = mapped_column(nullable=False)
+    birth_date: Mapped[date] = mapped_column(Date, nullable=False)
     location: Mapped[str] = mapped_column(String(120), nullable=True)
     role: Mapped[str] = mapped_column(
         String(20), nullable=False, default='user')
@@ -136,8 +135,8 @@ class Poi(db.Model):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     description: Mapped[str] = mapped_column(String(500), nullable=False)
-    latitude: Mapped[str] = mapped_column(nullable=False)
-    longitude: Mapped[str] = mapped_column(nullable=False)
+    latitude: Mapped[float] = mapped_column(Float, nullable=False)
+    longitude: Mapped[float] = mapped_column(Float, nullable=False)
     city_id: Mapped[str] = mapped_column(
         db.ForeignKey('city.id'), nullable=False)
     city: Mapped["City"] = db.relationship('City', back_populates='pois')

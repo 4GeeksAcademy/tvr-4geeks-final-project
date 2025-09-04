@@ -1,6 +1,6 @@
-from flask import Flask, request, jsonify, url_for, Blueprint, current_app
+from flask import request, jsonify, Blueprint, current_app
 from api.models import db, User, Poi, Country, City, Favorite, Visited, PoiImage, Tag, PoiTag
-from api.utils import generate_sitemap, APIException
+from api.utils import APIException
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -62,21 +62,32 @@ def get_authenticated_user():
     return user
 
 
-def get_object_or_404(model, unique_field_value, not_found_message, field_name="id"):
+def get_object_or_404(model, unique_field_value=None, not_found_message='Not found', field_name="id", **kwargs):
     """
-    Retrieve an object by a unique field from the database.
+    Retrieve an object from the database applying arbitrary criteria.
     Args:
         model: The SQLAlchemy model class to query.
-        unique_field_value: The value of the unique field to retrieve.
-        not_found_message: The error message to return if the object is not found.
-        field_name: The name of the unique field (default is 'id').
+        unique_field_value: Either the value of a single field or a dictionary
+            mapping field names to values.
+        not_found_message: Error message returned when no record is found.
+        field_name: Name of the field when ``unique_field_value`` is a scalar.
+        **kwargs: Additional filtering criteria.
     Raises:
         APIException: If the object does not exist.
     Returns:
         db.Model: The retrieved object.
     """
-    obj = model.query.filter(getattr(model, field_name)
-                             == unique_field_value).first()
+    if isinstance(unique_field_value, dict):
+        criteria = unique_field_value.copy()
+    elif unique_field_value is not None:
+        criteria = {field_name: unique_field_value}
+    else:
+        criteria = {}
+
+    if kwargs:
+        criteria.update(kwargs)
+
+    obj = model.query.filter_by(**criteria).first()
     if not obj:
         raise APIException(not_found_message, status_code=404)
     return obj
@@ -130,6 +141,23 @@ def normalize_body_to_list(body):
     raise APIException('Invalid input format', status_code=400)
 
 
+def parse_float(value, field_name):
+    """Ensure a value can be parsed to float.
+
+    Args:
+        value: The value to parse.
+        field_name (str): Name of the field for error messages.
+    Raises:
+        APIException: If the value cannot be converted to float.
+    Returns:
+        float: The parsed float value.
+    """
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        raise APIException(f"{field_name} must be a number", status_code=400)
+
+
 @api.route('/register', methods=['POST'])
 def register():
     """
@@ -163,7 +191,7 @@ def register():
     email = body.get('email')
     password = generate_password_hash(body.get('password'))
     try:
-        birth_date = datetime.strptime(body.get('birth_date'), "%m/%d/%Y")
+        birth_date = datetime.strptime(body.get('birth_date'), "%m/%d/%Y").date()
     except Exception:
         raise APIException(
             'birth_date must be in mm/dd/yyyy format', status_code=400)
@@ -501,8 +529,9 @@ def remove_favorite(poi_id):
     user = get_authenticated_user()
     favorite = get_object_or_404(
         Favorite,
-        unique_field_value=(user.id, poi_id),
-        not_found_message='Favorite not found'
+        not_found_message='Favorite not found',
+        user_id=user.id,
+        poi_id=poi_id
     )
     try:
         db.session.delete(favorite)
@@ -812,8 +841,9 @@ def delete_visited_poi(poi_id):
     user = get_authenticated_user()
     visited = get_object_or_404(
         Visited,
-        unique_field_value=(user.id, poi_id),
-        not_found_message='Visited POI not found'
+        not_found_message='Visited POI not found',
+        user_id=user.id,
+        poi_id=poi_id
     )
     try:
         db.session.delete(visited)
@@ -1160,8 +1190,8 @@ def create_poi():
     Body:
         - name (str): POI name.
         - description (str): POI description.
-        - latitude (str): Latitude.
-        - longitude (str): Longitude.
+        - latitude (float): Latitude.
+        - longitude (float): Longitude.
         - city_id (str): City ID where the POI belongs.
     Raises:
         APIException: If the city does not exist, a duplicate name exists in the same city, or a database error occurs.
@@ -1177,6 +1207,8 @@ def create_poi():
         name = item.get('name')
         require_body_fields(
             item, ['name', 'description', 'latitude', 'longitude', 'city_id'], item_name=name)
+        latitude = parse_float(item.get('latitude'), 'latitude')
+        longitude = parse_float(item.get('longitude'), 'longitude')
         key = f"{name}:{item.get('city_id')}"
         if key in seen_keys:
             raise APIException(f"Duplicate entry: {key}", status_code=400)
@@ -1194,8 +1226,8 @@ def create_poi():
             id=str(uuid.uuid4()),
             name=name,
             description=item.get('description'),
-            latitude=item.get('latitude'),
-            longitude=item.get('longitude'),
+            latitude=latitude,
+            longitude=longitude,
             city_id=city.id
         )
         created.append(poi)
@@ -1223,8 +1255,8 @@ def update_poi(poi_id):
     Body:
         - name (str, optional): POI name.
         - description (str, optional): POI description.
-        - latitude (str, optional): Latitude.
-        - longitude (str, optional): Longitude.
+        - latitude (float, optional): Latitude.
+        - longitude (float, optional): Longitude.
         - city_id (str, optional): City ID.
     Raises:
         APIException: If the POI or provided city does not exist, or a database error occurs.
@@ -1269,10 +1301,10 @@ def update_poi(poi_id):
         poi.name = new_name
     if 'description' in body and body.get('description'):
         poi.description = body.get('description')
-    if 'latitude' in body and body.get('latitude'):
-        poi.latitude = body.get('latitude')
-    if 'longitude' in body and body.get('longitude'):
-        poi.longitude = body.get('longitude')
+    if 'latitude' in body and body.get('latitude') is not None:
+        poi.latitude = parse_float(body.get('latitude'), 'latitude')
+    if 'longitude' in body and body.get('longitude') is not None:
+        poi.longitude = parse_float(body.get('longitude'), 'longitude')
     try:
         db.session.commit()
         return jsonify({'message': 'POI updated successfully', 'poi': poi.serialize()}), 200
