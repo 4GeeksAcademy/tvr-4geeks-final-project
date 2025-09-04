@@ -168,7 +168,6 @@ def register():
         - password (str): The password for the user account.
         - birth_date (str): The birth date of the user in mm/dd/yyyy format.
         - location (str, optional): The location of the user.
-        - role (str, optional): The role of the user.
     Raises:
         APIException: If required fields are missing, the email/username already exists, or the birth_date format is invalid.
     Returns:
@@ -193,7 +192,7 @@ def register():
         raise APIException(
             'birth_date must be in mm/dd/yyyy format', status_code=400)
     location = body.get('location')
-    role = body.get('role')
+    role = 'user'
 
     existing_user = User.query.filter_by(email=email).first()
     if existing_user:
@@ -244,8 +243,7 @@ def login():
     if not (email or user_name) or not password:
         raise APIException(
             'Email or user_name and password are required', status_code=400)
-    user = User.query.filter_by(email=email).first(
-    ) or User.query.filter_by(user_name=user_name).first()
+    user = User.query.filter_by(email=email).first() or User.query.filter_by(user_name=user_name).first()
     if not user:
         raise APIException('Invalid email or user_name', status_code=401)
     if not check_password_hash(user.password, password):
