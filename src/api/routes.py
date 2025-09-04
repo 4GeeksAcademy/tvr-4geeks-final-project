@@ -11,6 +11,11 @@ import uuid
 api = Blueprint('api', __name__)
 CORS(api)
 
+PROFILE_ALLOWED_FIELDS = {'user_name', 'email', 'location', 'password'}
+COUNTRY_ALLOWED_FIELDS = {'name', 'img'}
+CITY_ALLOWED_FIELDS = {'name', 'img', 'season', 'country_id'}
+POI_ALLOWED_FIELDS = {'name', 'description', 'latitude', 'longitude', 'city_id'}
+
 
 def handle_unexpected_error(context: str):
     """
@@ -112,15 +117,18 @@ def normalize_body_to_list(body):
     """
     if isinstance(body, dict):
         return [body]
-    elif isinstance(body, list):
-        if len(body) == 0:
-            raise APIException('Input list cannot be empty', status_code=400)
-        for item in body:
-            if not isinstance(item, dict):
-                raise APIException('Each item must be a JSON object', status_code=400)
-        return body
-    else:
+    
+    if not isinstance(body, list):
         raise APIException('Invalid input format', status_code=400)
+    
+    if not body:
+        raise APIException('Input list cannot be empty', status_code=400)
+
+    for item in body:
+        if not isinstance(item, dict):
+            raise APIException('Each item must be a JSON object', status_code=400)
+
+    return body
 
 
 @api.route('/register', methods=['POST'])
@@ -261,12 +269,10 @@ def update_profile():
     user = get_authenticated_user()
     body = request.get_json()
     body = require_json_object(body, context='updating profile')
-    allowed_fields = {'user_name', 'email', 'location', 'password'}
-    if not body:
+    allowed_fields = PROFILE_ALLOWED_FIELDS
+    provided_keys = set(body.keys())
+    if not provided_keys or not provided_keys.issubset(allowed_fields):
         raise APIException('No valid fields supplied', status_code=400)
-    for field in body.keys():
-        if field not in allowed_fields:
-            raise APIException(f'Unexpected field: {field}', status_code=400)
     user_name = body.get('user_name')
     email = body.get('email')
     location = body.get('location')
@@ -833,13 +839,14 @@ def create_tag():
     body = request.get_json()
     items = normalize_body_to_list(body)
     created = []
-    seen_names = set()
+    seen_keys = set()
     for item in items:
         name = item.get('name')
         require_body_fields(item, ['name'], item_name=name)
-        if name in seen_names:
-            raise APIException(f"Duplicate entry: {name}", status_code=400)
-        seen_names.add(name)
+        key = name
+        if key in seen_keys:
+            raise APIException(f"Duplicate entry: {key}", status_code=400)
+        seen_keys.add(key)
         existing_tag = Tag.query.filter_by(name=name).first()
         if existing_tag:
             raise APIException(f"Tag '{name}' already exists", status_code=400)
@@ -856,6 +863,7 @@ def create_tag():
             f"Integrity error on create tag: {str(e.orig)}")
         raise APIException("Database integrity error", status_code=400)
     except Exception:
+        db.session.rollback()
         handle_unexpected_error('creating tags')
 
 
@@ -1161,15 +1169,15 @@ def create_poi():
     items = normalize_body_to_list(body)
 
     created = []
-    seen_pairs = set()
+    seen_keys = set()
     for item in items:
         name = item.get('name')
         require_body_fields(
             item, ['name', 'description', 'latitude', 'longitude', 'city_id'], item_name=name)
-        key = (name, item.get('city_id'))
-        if key in seen_pairs:
-            raise APIException(f"Duplicate entry: {name}", status_code=400)
-        seen_pairs.add(key)
+        key = f"{name}:{item.get('city_id')}"
+        if key in seen_keys:
+            raise APIException(f"Duplicate entry: {key}", status_code=400)
+        seen_keys.add(key)
         city = get_object_or_404(
             City,
             unique_field_value=item.get('city_id'),
@@ -1224,18 +1232,35 @@ def update_poi(poi_id):
                             not_found_message='POI not found')
     body = request.get_json()
     body = require_json_object(body, context='updating POI')
-    allowed_fields = {'name', 'description', 'latitude', 'longitude', 'city_id'}
-    if not body:
+    allowed_fields = POI_ALLOWED_FIELDS
+    provided_keys = set(body.keys())
+    if not provided_keys or not provided_keys.issubset(allowed_fields):
         raise APIException('No valid fields supplied', status_code=400)
-    for field in body.keys():
-        if field not in allowed_fields:
-            raise APIException(f'Unexpected field: {field}', status_code=400)
+    
+    # Determine prospective new values
+    current_name = poi.name
+    current_city_id = poi.city_id
+    new_city_id = current_city_id
     if 'city_id' in body and body.get('city_id'):
-        city = get_object_or_404(City, unique_field_value=body.get(
-            'city_id'), not_found_message='City not found')
-        poi.city_id = city.id
+        city = get_object_or_404(
+            City,
+            unique_field_value=body.get('city_id'),
+            not_found_message='City not found')
+        new_city_id = city.id
+    new_name = body.get('name', current_name)
+
+    # Check for existing POI with same name and city
+    if new_name != current_name or new_city_id != current_city_id:
+        existing_poi = Poi.query.filter_by(
+            name=new_name, city_id=new_city_id).first()
+        if existing_poi and existing_poi.id != poi.id:
+            raise APIException('POI already exists in this city', 400)
+
+    # Apply updates
+    if 'city_id' in body and body.get('city_id'):
+        poi.city_id = new_city_id
     if 'name' in body and body.get('name'):
-        poi.name = body.get('name')
+        poi.name = new_name
     if 'description' in body and body.get('description'):
         poi.description = body.get('description')
     if 'latitude' in body and body.get('latitude'):
@@ -1296,13 +1321,14 @@ def create_country():
     body = request.get_json()
     items = normalize_body_to_list(body)
     created = []
-    seen_names = set()
+    seen_keys = set()
     for item in items:
         name = item.get('name')
         require_body_fields(item, ['name', 'img'], item_name=name)
-        if name in seen_names:
-            raise APIException(f"Duplicate entry: {name}", status_code=400)
-        seen_names.add(name)
+        key = name
+        if key in seen_keys:
+            raise APIException(f"Duplicate entry: {key}", status_code=400)
+        seen_keys.add(key)
         existing_country = Country.query.filter_by(name=name).first()
         if existing_country:
             raise APIException(
@@ -1341,12 +1367,10 @@ def update_country(country_name):
                                 not_found_message='Country not found', field_name='name')
     body = request.get_json()
     body = require_json_object(body, context='updating country')
-    allowed_fields = {'name', 'img'}
-    if not body:
+    allowed_fields = COUNTRY_ALLOWED_FIELDS
+    provided_keys = set(body.keys())
+    if not provided_keys or not provided_keys.issubset(allowed_fields):
         raise APIException('No valid fields supplied', status_code=400)
-    for field in body.keys():
-        if field not in allowed_fields:
-            raise APIException(f'Unexpected field: {field}', status_code=400)
     if 'name' in body and body.get('name'):
         existing = Country.query.filter(Country.name == body.get(
             'name'), Country.id != country.id).first()
@@ -1412,15 +1436,15 @@ def create_city():
     items = normalize_body_to_list(body)
 
     created = []
-    seen_pairs = set()
+    seen_keys = set()
     for item in items:
         name = item.get('name')
         require_body_fields(
             item, ['name', 'img', 'season', 'country_id'], item_name=name)
-        key = (name, item.get('country_id'))
-        if key in seen_pairs:
-            raise APIException(f"Duplicate entry: {name}", status_code=400)
-        seen_pairs.add(key)
+        key = f"{name}:{item.get('country_id')}"
+        if key in seen_keys:
+            raise APIException(f"Duplicate entry: {key}", status_code=400)
+        seen_keys.add(key)
         country = get_object_or_404(
             Country,
             unique_field_value=item.get('country_id'),
@@ -1474,18 +1498,35 @@ def update_city(city_id):
         City, unique_field_value=city_id, not_found_message='City not found')
     body = request.get_json()
     body = require_json_object(body, context='updating city')
-    allowed_fields = {'name', 'img', 'season', 'country_id'}
-    if not body:
+    allowed_fields = CITY_ALLOWED_FIELDS
+    provided_keys = set(body.keys())
+    if not provided_keys or not provided_keys.issubset(allowed_fields):
         raise APIException('No valid fields supplied', status_code=400)
-    for field in body.keys():
-        if field not in allowed_fields:
-            raise APIException(f'Unexpected field: {field}', status_code=400)
+    
+    # Determine prospective new values
+    current_name = city.name
+    current_country_id = city.country_id
+    new_country_id = current_country_id
     if 'country_id' in body and body.get('country_id'):
-        country = get_object_or_404(Country, unique_field_value=body.get(
-            'country_id'), not_found_message='Country not found')
-        city.country_id = country.id
+        country = get_object_or_404(
+            Country,
+            unique_field_value=body.get('country_id'),
+            not_found_message='Country not found')
+        new_country_id = country.id
+    new_name = body.get('name', current_name)
+
+    # Check for existing city with same name and country
+    if new_name != current_name or new_country_id != current_country_id:
+        existing_city = City.query.filter_by(
+            name=new_name, country_id=new_country_id).first()
+        if existing_city and existing_city.id != city.id:
+            raise APIException('City already exists in this country', 400)
+
+    # Apply updates
+    if 'country_id' in body and body.get('country_id'):
+        city.country_id = new_country_id
     if 'name' in body and body.get('name'):
-        city.name = body.get('name')
+        city.name = new_name
     if 'img' in body and body.get('img'):
         city.img = body.get('img')
     if 'season' in body and body.get('season'):
