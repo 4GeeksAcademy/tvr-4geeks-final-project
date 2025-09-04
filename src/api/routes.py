@@ -127,7 +127,6 @@ def normalize_body_to_list(body):
                     'Each item must be a JSON object', status_code=400)
         return body
 
-    return body
     raise APIException('Invalid input format', status_code=400)
 
 
@@ -1080,7 +1079,7 @@ def create_poi_image():
         url = item.get('url')
         poi_id = item.get('poi_id')
         require_body_fields(item, ['url', 'poi_id'], item_name=url)
-         key = f"{url}:{poi_id}"
+        key = f"{url}:{poi_id}"
         if key in seen_keys:
             raise APIException(f"Duplicate entry: {key}", status_code=400)
         seen_keys.add(key)

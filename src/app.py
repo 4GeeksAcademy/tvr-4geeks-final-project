@@ -31,7 +31,7 @@ MIGRATE = Migrate(app, db, compare_type=True)
 db.init_app(app)
 
 #JWT configuration
-app.config["JWT_SECRET_KEY"] = "4dd26120a586f7a1bdecee8378bc95e9"
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 jwt = JWTManager(app)
 
 # add the admin
