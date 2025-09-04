@@ -62,7 +62,7 @@ def get_authenticated_user():
     return user
 
 
-def get_object_or_404(model, unique_field_value=None, not_found_message='Not found', field_name="id", **kwargs):
+def get_object_or_404(model, unique_field_value=None, not_found_message='Not found', field_name="id"):
     """
     Retrieve an object from the database applying arbitrary criteria.
     Args:
@@ -71,23 +71,20 @@ def get_object_or_404(model, unique_field_value=None, not_found_message='Not fou
             mapping field names to values.
         not_found_message: Error message returned when no record is found.
         field_name: Name of the field when ``unique_field_value`` is a scalar.
-        **kwargs: Additional filtering criteria.
     Raises:
         APIException: If the object does not exist.
     Returns:
         db.Model: The retrieved object.
     """
     if isinstance(unique_field_value, dict):
-        criteria = unique_field_value.copy()
+        obj = model.query.filter_by(**unique_field_value).first()
+    elif isinstance(unique_field_value, (tuple, list)):
+        obj = model.query.get(tuple(unique_field_value))
     elif unique_field_value is not None:
-        criteria = {field_name: unique_field_value}
+        obj = model.query.filter_by(**{field_name: unique_field_value}).first()
     else:
-        criteria = {}
+        obj = None
 
-    if kwargs:
-        criteria.update(kwargs)
-
-    obj = model.query.filter_by(**criteria).first()
     if not obj:
         raise APIException(not_found_message, status_code=404)
     return obj
@@ -191,7 +188,7 @@ def register():
     email = body.get('email')
     password = generate_password_hash(body.get('password'))
     try:
-        birth_date = datetime.strptime(body.get('birth_date'), "%m/%d/%Y").date()
+        birth_date = datetime.strptime(body.get('birth_date'), "%m/%d/%Y")
     except Exception:
         raise APIException(
             'birth_date must be in mm/dd/yyyy format', status_code=400)
@@ -529,9 +526,8 @@ def remove_favorite(poi_id):
     user = get_authenticated_user()
     favorite = get_object_or_404(
         Favorite,
+        (user.id, poi_id),
         not_found_message='Favorite not found',
-        user_id=user.id,
-        poi_id=poi_id
     )
     try:
         db.session.delete(favorite)
@@ -841,9 +837,8 @@ def delete_visited_poi(poi_id):
     user = get_authenticated_user()
     visited = get_object_or_404(
         Visited,
-        not_found_message='Visited POI not found',
-        user_id=user.id,
-        poi_id=poi_id
+        (user.id, poi_id),
+        not_found_message='Visited POI not found'
     )
     try:
         db.session.delete(visited)
@@ -1154,32 +1149,7 @@ def get_poi_image(image_id):
         raise
     except Exception:
         handle_unexpected_error('retrieving POI image')
-
-
-@api.route('/poiimages/<string:image_id>', methods=['DELETE'])
-def delete_poi_image(image_id):
-    """
-    Delete a POI image by its ID.
-    Args:
-        image_id (str): POI image ID.
-    Body:
-        None.
-    Raises:
-        APIException: If the POI image is not found.
-    Returns:
-        Response: JSON with success or error message.
-    """
-    poi_image = PoiImage.query.get(image_id)
-    if not poi_image:
-        raise APIException('POI image not found', status_code=404)
-    try:
-        db.session.delete(poi_image)
-        db.session.commit()
-        return jsonify({'message': 'POI image deleted successfully'}), 200
-    except Exception:
-        db.session.rollback()
-        handle_unexpected_error('deleting POI image')
-
+        
 
 @api.route('/pois', methods=['POST'])
 def create_poi():
@@ -1631,32 +1601,6 @@ def list_poi_images():
         raise
     except Exception:
         handle_unexpected_error('listing POI images')
-
-
-@api.route('/poiimages/<string:image_id>', methods=['GET'])
-def get_poi_image(image_id):
-    """
-    Retrieve a POI image by its ID.
-    Args:
-        image_id (str): POI image ID.
-    Body:
-        None.
-    Raises:
-        APIException: If the POI image is not found.
-    Returns:
-        Response: JSON with POI image details.
-    """
-    try:
-        poi_image = get_object_or_404(
-            PoiImage,
-            unique_field_value=image_id,
-            not_found_message='POI image not found'
-        )
-        return jsonify({'message': 'POI image retrieved successfully', 'image': poi_image.serialize()}), 200
-    except APIException:
-        raise
-    except Exception:
-        handle_unexpected_error('retrieving POI image')
 
 
 @api.route('/poiimages/<string:image_id>', methods=['DELETE'])

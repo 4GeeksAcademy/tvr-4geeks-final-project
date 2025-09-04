@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Float, Date
+from datetime import datetime
+from sqlalchemy import String, Float
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import List
 
@@ -20,7 +21,7 @@ class User(db.Model):
     email: Mapped[str] = mapped_column(
         String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
-    birth_date: Mapped[date] = mapped_column(Date, nullable=False)
+    birth_date: Mapped[datetime] = mapped_column(nullable=False)
     location: Mapped[str] = mapped_column(String(120), nullable=True)
     role: Mapped[str] = mapped_column(
         String(20), nullable=False, default='user')

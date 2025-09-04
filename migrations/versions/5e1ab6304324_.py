@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: ca0902f0cc6f
+Revision ID: 5e1ab6304324
 Revises: 
-Create Date: 2025-09-02 08:57:57.360094
+Create Date: 2025-09-04 23:29:38.435793
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'ca0902f0cc6f'
+revision = '5e1ab6304324'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -52,17 +52,19 @@ def upgrade():
     sa.Column('season', sa.String(length=120), nullable=False),
     sa.Column('country_id', sa.String(length=36), nullable=False),
     sa.ForeignKeyConstraint(['country_id'], ['country.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name', 'country_id', name='uq_city_name_country')
     )
     op.create_table('poi',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('name', sa.String(length=120), nullable=False),
     sa.Column('description', sa.String(length=500), nullable=False),
-    sa.Column('latitude', sa.String(), nullable=False),
-    sa.Column('longitude', sa.String(), nullable=False),
+    sa.Column('latitude', sa.Float(), nullable=False),
+    sa.Column('longitude', sa.Float(), nullable=False),
     sa.Column('city_id', sa.String(length=36), nullable=False),
     sa.ForeignKeyConstraint(['city_id'], ['city.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name', 'city_id', name='uq_poi_name_city')
     )
     op.create_table('favorite',
     sa.Column('user_id', sa.String(length=36), nullable=False),
