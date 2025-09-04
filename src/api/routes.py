@@ -1149,7 +1149,7 @@ def get_poi_image(image_id):
         raise
     except Exception:
         handle_unexpected_error('retrieving POI image')
-        
+
 
 @api.route('/pois', methods=['POST'])
 def create_poi():
@@ -1616,9 +1616,9 @@ def delete_poi_image(image_id):
     Returns:
         Response: JSON with success or error message.
     """
-    poi_image = PoiImage.query.get(image_id)
-    if not poi_image:
-        raise APIException('POI image not found', status_code=404)
+    poi_image = get_object_or_404(
+        PoiImage, unique_field_value=image_id, not_found_message='POI image not found'
+    )
     try:
         db.session.delete(poi_image)
         db.session.commit()
