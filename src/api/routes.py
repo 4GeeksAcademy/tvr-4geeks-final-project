@@ -154,6 +154,20 @@ def parse_float(value, field_name):
     except (TypeError, ValueError):
         raise APIException(f"{field_name} must be a number", status_code=400)
 
+def validate_coordinates(latitude=None, longitude=None):
+    """Validate latitude and longitude ranges.
+
+    Args:
+        latitude (float, optional): Latitude to validate.
+        longitude (float, optional): Longitude to validate.
+    Raises:
+        APIException: If latitude or longitude is out of allowed ranges.
+    """
+    if latitude is not None and not (-90 <= latitude <= 90):
+        raise APIException('latitude out of range', 400)
+    if longitude is not None and not (-180 <= longitude <= 180):
+        raise APIException('longitude out of range', 400)
+
 
 @api.route('/register', methods=['POST'])
 def register():
@@ -1179,6 +1193,7 @@ def create_poi():
             item, ['name', 'description', 'latitude', 'longitude', 'city_id'], item_name=name)
         latitude = parse_float(item.get('latitude'), 'latitude')
         longitude = parse_float(item.get('longitude'), 'longitude')
+        validate_coordinates(latitude=latitude, longitude=longitude)
         key = f"{name}:{item.get('city_id')}"
         if key in seen_keys:
             raise APIException(f"Duplicate entry: {key}", status_code=400)
@@ -1272,9 +1287,13 @@ def update_poi(poi_id):
     if 'description' in body and body.get('description'):
         poi.description = body.get('description')
     if 'latitude' in body and body.get('latitude') is not None:
-        poi.latitude = parse_float(body.get('latitude'), 'latitude')
+        latitude = parse_float(body.get('latitude'), 'latitude')
+        validate_coordinates(latitude=latitude)
+        poi.latitude = latitude
     if 'longitude' in body and body.get('longitude') is not None:
-        poi.longitude = parse_float(body.get('longitude'), 'longitude')
+        longitude = parse_float(body.get('longitude'), 'longitude')
+        validate_coordinates(longitude=longitude)
+        poi.longitude = longitude
     try:
         db.session.commit()
         return jsonify({'message': 'POI updated successfully', 'poi': poi.serialize()}), 200
