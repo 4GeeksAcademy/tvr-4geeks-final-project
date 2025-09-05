@@ -384,7 +384,9 @@ def add_user():
         raise APIException(
             'birth_date must be in mm/dd/yyyy format', status_code=400)
     location = body.get('location')  # Optional
-    role = body.get('role')  # Optional
+    role = body.get('role')
+    if role not in {'user', 'admin'}:
+        raise APIException('Invalid role (only user and admin are allowed)', 400)
 
     existing_user = User.query.filter_by(email=email).first()
     if existing_user:
