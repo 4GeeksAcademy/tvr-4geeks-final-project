@@ -1,6 +1,6 @@
-from flask import request, jsonify, Blueprint, current_app
+from flask import Flask, request, jsonify, url_for, Blueprint, current_app
 from api.models import db, User, Poi, Country, City, Favorite, Visited, PoiImage, Tag, PoiTag
-from api.utils import APIException
+from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -62,29 +62,21 @@ def get_authenticated_user():
     return user
 
 
-def get_object_or_404(model, unique_field_value=None, not_found_message='Not found', field_name="id"):
+def get_object_or_404(model, unique_field_value, not_found_message, field_name="id"):
     """
-    Retrieve an object from the database applying arbitrary criteria.
+    Retrieve an object by a unique field from the database.
     Args:
         model: The SQLAlchemy model class to query.
-        unique_field_value: Either the value of a single field or a dictionary
-            mapping field names to values.
-        not_found_message: Error message returned when no record is found.
-        field_name: Name of the field when ``unique_field_value`` is a scalar.
+        unique_field_value: The value of the unique field to retrieve.
+        not_found_message: The error message to return if the object is not found.
+        field_name: The name of the unique field (default is 'id').
     Raises:
         APIException: If the object does not exist.
     Returns:
         db.Model: The retrieved object.
     """
-    if isinstance(unique_field_value, dict):
-        obj = model.query.filter_by(**unique_field_value).first()
-    elif isinstance(unique_field_value, (tuple, list)):
-        obj = model.query.get(tuple(unique_field_value))
-    elif unique_field_value is not None:
-        obj = model.query.filter_by(**{field_name: unique_field_value}).first()
-    else:
-        obj = None
-
+    obj = model.query.filter(getattr(model, field_name)
+                             == unique_field_value).first()
     if not obj:
         raise APIException(not_found_message, status_code=404)
     return obj
@@ -126,47 +118,17 @@ def normalize_body_to_list(body):
     if isinstance(body, dict):
         return [body]
     
-    if isinstance(body, list):
-        if not body:
-            raise APIException('Input list cannot be empty', status_code=400)
-        for item in body:
-            if not isinstance(item, dict):
-                raise APIException(
-                    'Each item must be a JSON object', status_code=400)
-        return body
+    if not isinstance(body, list):
+        raise APIException('Invalid input format', status_code=400)
+    
+    if not body:
+        raise APIException('Input list cannot be empty', status_code=400)
 
-    raise APIException('Invalid input format', status_code=400)
+    for item in body:
+        if not isinstance(item, dict):
+            raise APIException('Each item must be a JSON object', status_code=400)
 
-
-def parse_float(value, field_name):
-    """Ensure a value can be parsed to float.
-
-    Args:
-        value: The value to parse.
-        field_name (str): Name of the field for error messages.
-    Raises:
-        APIException: If the value cannot be converted to float.
-    Returns:
-        float: The parsed float value.
-    """
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        raise APIException(f"{field_name} must be a number", status_code=400)
-
-def validate_coordinates(latitude=None, longitude=None):
-    """Validate latitude and longitude ranges.
-
-    Args:
-        latitude (float, optional): Latitude to validate.
-        longitude (float, optional): Longitude to validate.
-    Raises:
-        APIException: If latitude or longitude is out of allowed ranges.
-    """
-    if latitude is not None and not (-90 <= latitude <= 90):
-        raise APIException('latitude out of range', 400)
-    if longitude is not None and not (-180 <= longitude <= 180):
-        raise APIException('longitude out of range', 400)
+    return body
 
 
 @api.route('/register', methods=['POST'])
@@ -182,6 +144,7 @@ def register():
         - password (str): The password for the user account.
         - birth_date (str): The birth date of the user in mm/dd/yyyy format.
         - location (str, optional): The location of the user.
+        - role (str, optional): The role of the user.
     Raises:
         APIException: If required fields are missing, the email/username already exists, or the birth_date format is invalid.
     Returns:
@@ -206,7 +169,7 @@ def register():
         raise APIException(
             'birth_date must be in mm/dd/yyyy format', status_code=400)
     location = body.get('location')
-    role = 'user'
+    role = body.get('role')
 
     existing_user = User.query.filter_by(email=email).first()
     if existing_user:
@@ -257,7 +220,8 @@ def login():
     if not (email or user_name) or not password:
         raise APIException(
             'Email or user_name and password are required', status_code=400)
-    user = User.query.filter_by(email=email).first() or User.query.filter_by(user_name=user_name).first()
+    user = User.query.filter_by(email=email).first(
+    ) or User.query.filter_by(user_name=user_name).first()
     if not user:
         raise APIException('Invalid email or user_name', status_code=401)
     if not check_password_hash(user.password, password):
@@ -306,11 +270,9 @@ def update_profile():
     body = request.get_json()
     body = require_json_object(body, context='updating profile')
     allowed_fields = PROFILE_ALLOWED_FIELDS
-    if not body:
+    provided_keys = set(body.keys())
+    if not provided_keys or not provided_keys.issubset(allowed_fields):
         raise APIException('No valid fields supplied', status_code=400)
-    for field in body.keys():
-        if field not in allowed_fields:
-            raise APIException(f"Unexpected field: {field}", status_code=400)
     user_name = body.get('user_name')
     email = body.get('email')
     location = body.get('location')
@@ -398,9 +360,7 @@ def add_user():
         raise APIException(
             'birth_date must be in mm/dd/yyyy format', status_code=400)
     location = body.get('location')  # Optional
-    role = body.get('role')
-    if role not in {'user', 'admin'}:
-        raise APIException('Invalid role (only user and admin are allowed)', 400)
+    role = body.get('role')  # Optional
 
     existing_user = User.query.filter_by(email=email).first()
     if existing_user:
@@ -538,11 +498,9 @@ def remove_favorite(poi_id):
         Response: JSON with success or error message.
     """
     user = get_authenticated_user()
-    favorite = get_object_or_404(
-        Favorite,
-        (user.id, poi_id),
-        not_found_message='Favorite not found',
-    )
+    favorite = Favorite.query.filter_by(user_id=user.id, poi_id=poi_id).first()
+    if not favorite:
+        raise APIException('Favorite not found', status_code=404)
     try:
         db.session.delete(favorite)
         db.session.commit()
@@ -747,7 +705,7 @@ def get_city(city_id):
 @api.route('/popular-pois', methods=['GET'])
 def get_popular_pois():
     """
-    Retrieve a random list of up to 20 POIs.
+    Retrieve a random list of up to 8 POIs.
     Args:
         None.
     Body:
@@ -758,7 +716,7 @@ def get_popular_pois():
         Response: JSON list of POIs. Returns an empty list if none are found.
     """
     try:
-        pois = Poi.query.order_by(db.func.random()).limit(20).all()
+        pois = Poi.query.order_by(db.func.random()).limit(8).all()
         return jsonify({'message': 'Popular POIs retrieved successfully', 'pois': [poi.serialize() for poi in pois]}), 200
     except APIException:
         raise
@@ -842,18 +800,16 @@ def delete_visited_poi(poi_id):
     """
     Remove a POI from the authenticated user's visited list.
     Args:
-        None (expects JSON body with poi_id).
+        poi_id (str): POI ID.
     Raises:
-        APIException: If authentication fails, required fields are missing, or visited POI not found.
+        APIException: If authentication fails or the visited POI is not found.
     Returns:
         Response: JSON with success or error message.
     """
     user = get_authenticated_user()
-    visited = get_object_or_404(
-        Visited,
-        (user.id, poi_id),
-        not_found_message='Visited POI not found'
-    )
+    visited = Visited.query.filter_by(user_id=user.id, poi_id=poi_id).first()
+    if not visited:
+        raise APIException('Visited POI not found', status_code=404)
     try:
         db.session.delete(visited)
         db.session.commit()
@@ -1022,7 +978,6 @@ def add_tag_to_poi(poi_id, tag_name):
     except APIException:
         raise
     except Exception:
-        db.session.rollback()
         handle_unexpected_error('adding tag to POI')
 
 
@@ -1063,7 +1018,6 @@ def remove_tag_from_poi(poi_id, tag_name):
     except APIException:
         raise
     except Exception:
-        db.session.rollback()
         handle_unexpected_error('removing tag from POI')
 
 
@@ -1113,15 +1067,15 @@ def create_poi_image():
     items = normalize_body_to_list(body)
 
     created = []
-    seen_keys = set()
+    seen_pairs = set()
     for item in items:
         url = item.get('url')
         poi_id = item.get('poi_id')
         require_body_fields(item, ['url', 'poi_id'], item_name=url)
-        key = f"{url}:{poi_id}"
-        if key in seen_keys:
-            raise APIException(f"Duplicate entry: {key}", status_code=400)
-        seen_keys.add(key)
+        key = (url, poi_id)
+        if key in seen_pairs:
+            raise APIException(f"Duplicate entry: {url}", status_code=400)
+        seen_pairs.add(key)
         poi = get_object_or_404(
             Poi,
             unique_field_value=poi_id,
@@ -1174,9 +1128,10 @@ def create_poi():
     Body:
         - name (str): POI name.
         - description (str): POI description.
-        - latitude (float): Latitude.
-        - longitude (float): Longitude.
-        - city_id (str): City ID where the POI belongs.
+        - latitude (str): Latitude.
+        - longitude (str): Longitude.
+        - country_name (str): Country name.
+        - city_name (str): City name.
     Raises:
         APIException: If the city does not exist, a duplicate name exists in the same city, or a database error occurs.
     Returns:
@@ -1190,29 +1145,28 @@ def create_poi():
     for item in items:
         name = item.get('name')
         require_body_fields(
-            item, ['name', 'description', 'latitude', 'longitude', 'city_id'], item_name=name)
-        latitude = parse_float(item.get('latitude'), 'latitude')
-        longitude = parse_float(item.get('longitude'), 'longitude')
-        validate_coordinates(latitude=latitude, longitude=longitude)
+            item, ['name', 'description', 'latitude', 'longitude', 'country_name', 'city_name'], item_name=name)
         key = f"{name}:{item.get('city_id')}"
         if key in seen_keys:
             raise APIException(f"Duplicate entry: {key}", status_code=400)
         seen_keys.add(key)
-        city = get_object_or_404(
-            City,
-            unique_field_value=item.get('city_id'),
-            not_found_message='City not found'
-        )
+        
+        country = Country.query.filter_by(name=item.get('country_name')).first()
+        if not country:
+            raise APIException(f"Country '{item.get('country_name')}' not found", status_code=400)
+
+        city = City.query.filter_by(name=item.get('city_name'), country_id=country.id).first()
+        if not city:
+            raise APIException(f"City '{item.get('city_name')}' in country '{item.get('country_name')}' not found", status_code=400)
         existing = Poi.query.filter_by(name=name, city_id=city.id).first()
         if existing:
-            raise APIException(
-                f"POI '{name}' already exists in this city", status_code=400)
+            raise APIException(f"POI '{name}' already exists in this city", status_code=400)
         poi = Poi(
             id=str(uuid.uuid4()),
             name=name,
             description=item.get('description'),
-            latitude=latitude,
-            longitude=longitude,
+            latitude=item.get('latitude'),
+            longitude=item.get('longitude'),
             city_id=city.id
         )
         created.append(poi)
@@ -1240,8 +1194,8 @@ def update_poi(poi_id):
     Body:
         - name (str, optional): POI name.
         - description (str, optional): POI description.
-        - latitude (float, optional): Latitude.
-        - longitude (float, optional): Longitude.
+        - latitude (str, optional): Latitude.
+        - longitude (str, optional): Longitude.
         - city_id (str, optional): City ID.
     Raises:
         APIException: If the POI or provided city does not exist, or a database error occurs.
@@ -1253,12 +1207,10 @@ def update_poi(poi_id):
     body = request.get_json()
     body = require_json_object(body, context='updating POI')
     allowed_fields = POI_ALLOWED_FIELDS
-    if not body:
+    provided_keys = set(body.keys())
+    if not provided_keys or not provided_keys.issubset(allowed_fields):
         raise APIException('No valid fields supplied', status_code=400)
-    for field in body.keys():
-        if field not in allowed_fields:
-            raise APIException(f"Unexpected field: {field}", status_code=400)
-        
+    
     # Determine prospective new values
     current_name = poi.name
     current_city_id = poi.city_id
@@ -1271,9 +1223,8 @@ def update_poi(poi_id):
         new_city_id = city.id
     new_name = body.get('name', current_name)
 
-    # Check for existing POI with same name and city when updating
-    if ('name' in body and body.get('name')) or (
-            'city_id' in body and body.get('city_id')):
+    # Check for existing POI with same name and city
+    if new_name != current_name or new_city_id != current_city_id:
         existing_poi = Poi.query.filter_by(
             name=new_name, city_id=new_city_id).first()
         if existing_poi and existing_poi.id != poi.id:
@@ -1286,14 +1237,10 @@ def update_poi(poi_id):
         poi.name = new_name
     if 'description' in body and body.get('description'):
         poi.description = body.get('description')
-    if 'latitude' in body and body.get('latitude') is not None:
-        latitude = parse_float(body.get('latitude'), 'latitude')
-        validate_coordinates(latitude=latitude)
-        poi.latitude = latitude
-    if 'longitude' in body and body.get('longitude') is not None:
-        longitude = parse_float(body.get('longitude'), 'longitude')
-        validate_coordinates(longitude=longitude)
-        poi.longitude = longitude
+    if 'latitude' in body and body.get('latitude'):
+        poi.latitude = body.get('latitude')
+    if 'longitude' in body and body.get('longitude'):
+        poi.longitude = body.get('longitude')
     try:
         db.session.commit()
         return jsonify({'message': 'POI updated successfully', 'poi': poi.serialize()}), 200
@@ -1395,11 +1342,9 @@ def update_country(country_name):
     body = request.get_json()
     body = require_json_object(body, context='updating country')
     allowed_fields = COUNTRY_ALLOWED_FIELDS
-    if not body:
+    provided_keys = set(body.keys())
+    if not provided_keys or not provided_keys.issubset(allowed_fields):
         raise APIException('No valid fields supplied', status_code=400)
-    for field in body.keys():
-        if field not in allowed_fields:
-            raise APIException(f"Unexpected field: {field}", status_code=400)
     if 'name' in body and body.get('name'):
         existing = Country.query.filter(Country.name == body.get(
             'name'), Country.id != country.id).first()
@@ -1528,11 +1473,9 @@ def update_city(city_id):
     body = request.get_json()
     body = require_json_object(body, context='updating city')
     allowed_fields = CITY_ALLOWED_FIELDS
-    if not body:
+    provided_keys = set(body.keys())
+    if not provided_keys or not provided_keys.issubset(allowed_fields):
         raise APIException('No valid fields supplied', status_code=400)
-    for field in body.keys():
-        if field not in allowed_fields:
-            raise APIException(f"Unexpected field: {field}", status_code=400)
     
     # Determine prospective new values
     current_name = city.name
@@ -1546,9 +1489,8 @@ def update_city(city_id):
         new_country_id = country.id
     new_name = body.get('name', current_name)
 
-    # Check for existing city with same name and country when updating
-    if ('name' in body and body.get('name')) or (
-            'country_id' in body and body.get('country_id')):
+    # Check for existing city with same name and country
+    if new_name != current_name or new_country_id != current_country_id:
         existing_city = City.query.filter_by(
             name=new_name, country_id=new_country_id).first()
         if existing_city and existing_city.id != city.id:
@@ -1635,9 +1577,9 @@ def delete_poi_image(image_id):
     Returns:
         Response: JSON with success or error message.
     """
-    poi_image = get_object_or_404(
-        PoiImage, unique_field_value=image_id, not_found_message='POI image not found'
-    )
+    poi_image = PoiImage.query.get(image_id)
+    if not poi_image:
+        raise APIException('POI image not found', status_code=404)
     try:
         db.session.delete(poi_image)
         db.session.commit()
