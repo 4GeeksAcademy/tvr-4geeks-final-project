@@ -1146,11 +1146,12 @@ def create_poi():
         name = item.get('name')
         require_body_fields(
             item, ['name', 'description', 'latitude', 'longitude', 'country_name', 'city_name'], item_name=name)
-        key = f"{name}:{item.get('city_id')}"
-        if key in seen_keys:
-            raise APIException(f"Duplicate entry: {key}", status_code=400)
-        seen_keys.add(key)
         
+        try:
+            latitude = float(item.get('latitude'))
+            longitude = float(item.get('longitude'))
+        except (TypeError, ValueError):
+            raise APIException('latitude/longitude must be numeric', 400)
         country = Country.query.filter_by(name=item.get('country_name')).first()
         if not country:
             raise APIException(f"Country '{item.get('country_name')}' not found", status_code=400)
@@ -1158,6 +1159,10 @@ def create_poi():
         city = City.query.filter_by(name=item.get('city_name'), country_id=country.id).first()
         if not city:
             raise APIException(f"City '{item.get('city_name')}' in country '{item.get('country_name')}' not found", status_code=400)
+        key = f"{name}:{city.id}"
+        if key in seen_keys:
+            raise APIException(f"Duplicate entry: {key}", status_code=400)
+        seen_keys.add(key)
         existing = Poi.query.filter_by(name=name, city_id=city.id).first()
         if existing:
             raise APIException(f"POI '{name}' already exists in this city", status_code=400)
@@ -1165,8 +1170,8 @@ def create_poi():
             id=str(uuid.uuid4()),
             name=name,
             description=item.get('description'),
-            latitude=item.get('latitude'),
-            longitude=item.get('longitude'),
+            latitude=latitude,
+            longitude=longitude,
             city_id=city.id
         )
         created.append(poi)
@@ -1238,9 +1243,15 @@ def update_poi(poi_id):
     if 'description' in body and body.get('description'):
         poi.description = body.get('description')
     if 'latitude' in body and body.get('latitude'):
-        poi.latitude = body.get('latitude')
+        try:
+            poi.latitude = float(body.get('latitude'))
+        except (TypeError, ValueError):
+            raise APIException('latitude/longitude must be numeric', 400)
     if 'longitude' in body and body.get('longitude'):
-        poi.longitude = body.get('longitude')
+        try:
+            poi.longitude = float(body.get('longitude'))
+        except (TypeError, ValueError):
+            raise APIException('latitude/longitude must be numeric', 400)
     try:
         db.session.commit()
         return jsonify({'message': 'POI updated successfully', 'poi': poi.serialize()}), 200
