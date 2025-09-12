@@ -84,16 +84,17 @@ def get_object_or_404(model, unique_field_value, not_found_message, field_name="
 
 def require_body_fields(body, fields, item_name=None):
     """
-    Ensure that the request body contains exactly the required fields.
+    Ensure that the request body contains exactly the required fields and that they are not empty.
     Args:
         body: The request body (dict).
         fields: A list of required field names.
         item_name: Optional. The name of the item being validated.
     Raises:
-        APIException: If any required field is missing or if there are extra fields.
+        APIException: If any required field is missing, empty, or if there are extra fields.
     """
     missing_fields = [field for field in fields if field not in body]
     extra_fields = [field for field in body if field not in fields]
+    empty_fields = [field for field in fields if not body.get(field)]
 
     item_info = f" in item '{item_name}'" if item_name else ""
 
@@ -103,6 +104,9 @@ def require_body_fields(body, fields, item_name=None):
     if extra_fields:
         raise APIException(
             f"Extra fields not allowed: {', '.join(extra_fields)}{item_info}", status_code=400)
+    if empty_fields:
+        raise APIException(
+            f"Fields cannot be empty: {', '.join(empty_fields)}{item_info}", status_code=400)
 
 
 def normalize_body_to_list(body):
@@ -1049,6 +1053,33 @@ def get_tags_of_poi(poi_id):
         handle_unexpected_error('retrieving tags of POI')
 
 
+@api.route('/pois/<string:poi_id>/poiimages', methods=['GET'])
+def get_images_of_poi(poi_id):
+    """
+    Retrieve all images associated with a given POI.
+    Args:
+        poi_id (str): POI ID.
+    Body:
+        None.
+    Raises:
+        APIException: If the POI does not exist or an unexpected error occurs.
+    Returns:
+        Response: JSON list of POI images. Returns an empty list if none are associated.
+    """
+    try:
+        poi = get_object_or_404(
+            Poi,
+            unique_field_value=poi_id,
+            not_found_message='POI not found'
+        )
+        images = PoiImage.query.filter_by(poi_id=poi.id).all()
+        return jsonify({'message': 'POI images retrieved successfully', 'images': [img.serialize() for img in images]}), 200
+    except APIException:
+        raise
+    except Exception:
+        handle_unexpected_error('retrieving images of POI')
+
+
 @api.route('/poiimages', methods=['POST'])
 def create_poi_image():
     """
@@ -1411,7 +1442,7 @@ def create_city():
         - name (str): City name.
         - img (str): City image URL.
         - season (str): Preferred season.
-        - country_id (str): Country ID.
+        - country_name (str): Country name.
     Raises:
         APIException: If the provided country does not exist, a duplicate name exists in the same country, or a database error occurs.
     Returns:
@@ -1425,15 +1456,16 @@ def create_city():
     for item in items:
         name = item.get('name')
         require_body_fields(
-            item, ['name', 'img', 'season', 'country_id'], item_name=name)
-        key = f"{name}:{item.get('country_id')}"
+            item, ['name', 'img', 'season', 'country_name'], item_name=name)
+        key = f"{name}:{item.get('country_name')}"
         if key in seen_keys:
             raise APIException(f"Duplicate entry: {key}", status_code=400)
         seen_keys.add(key)
         country = get_object_or_404(
             Country,
-            unique_field_value=item.get('country_id'),
-            not_found_message='Country not found'
+            unique_field_value=item.get('country_name'),
+            not_found_message='Country not found',
+            field_name='name'
         )
         existing = City.query.filter_by(
             name=name, country_id=country.id).first()
