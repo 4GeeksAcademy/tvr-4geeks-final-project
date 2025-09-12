@@ -8,6 +8,12 @@ export function getMapUrl(lat, long, zoom=15, style="basic-v2") {
     return `${baseUrl}/${style}/?key=${mapApiKey}#${zoom}/${lat}/${long}`;
 }
 
+// OJO: static maps usa lon,lat
+export function getStaticMapUrl(lat, long, zoom=15, style="basic-v2", w=800, h=500) {
+  const lon = long; // tu función de geocoding devuelve [lon, lat]
+  return `${baseUrl}/${style}/static/${lon},${lat},${zoom}/${w}x${h}.png?key=${mapApiKey}&markers=${lon},${lat}`;
+}
+
 export async function getCoordinatesByName(locationName) {
     if (!locationName) throw new Error("Location name is required");
     const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(locationName)}.json?key=${mapApiKey}&limit=1`;
