@@ -1,4 +1,4 @@
-const baseUrl = "https://reimagined-dollop-7w6jw97rp6g2r74p-3001.app.github.dev"
+const baseUrl = import.meta.env.VITE_BACKEND_URL;
 
 export async function getPoiImages(poiId) {
     if (!poiId) throw new Error("POI ID is required");
@@ -11,7 +11,7 @@ export async function getPoiImages(poiId) {
 }
 
 export async function getPoiDetails(poiId) {
-    if (!poiId) throw new Error("POI ID is required");of
+    if (!poiId) throw new Error("POI ID is required");
     const url = `${baseUrl}/api/pois/${poiId}`;
     const response = await fetch(url);
     if (!response.ok) {
