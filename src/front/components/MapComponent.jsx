@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 // CDN o paquete; ejemplo con CDN UMD:
-import "https://cdn.maptiler.com/maptiler-sdk-js/v1.0.0/maptiler-sdk.css";
+// import "https://cdn.maptiler.com/maptiler-sdk-js/v1.0.0/maptiler-sdk.css";
 
 export const MapComponent = ({ lat, long, zoom = 15, style = "basic-v2" }) => {
   const ref = useRef(null);
