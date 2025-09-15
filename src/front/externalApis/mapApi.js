@@ -8,10 +8,9 @@ export function getMapUrl(lat, long, zoom=15, style="basic-v2") {
     return `${baseUrl}/${style}/?key=${mapApiKey}#${zoom}/${lat}/${long}`;
 }
 
-// OJO: static maps usa lon,lat
 export function getStaticMapUrl(lat, long, zoom=15, style="basic-v2", w=800, h=500) {
   const lon = long; // tu función de geocoding devuelve [lon, lat]
-  return `${baseUrl}/${style}/static/${lon},${lat},${zoom}/${w}x${h}.png?key=${mapApiKey}&markers=${lon},${lat}`;
+  return `${baseUrl}/${style}/static/${lon},${lat},${zoom}/${w}x${h}.png?key=${mapApiKey}&markers=${lon},${lat}&language=en`;
 }
 
 export async function getCoordinatesByName(locationName) {

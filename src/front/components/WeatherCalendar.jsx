@@ -24,13 +24,10 @@ export const WeatherCalendar = ({ lat, lon }) => {
             try {
                 const today = new Date();
                 const prevDates = [
-                    new Date(today.getFullYear(), today.getMonth(), today.getDate() - 2),
-                    new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1)
+                    new Date(today.getFullYear(), today.getMonth(), (today.getDate() - 2)),
+                    new Date(today.getFullYear(), today.getMonth(), (today.getDate() - 1))
                 ];
-                const prevDateStrs = prevDates.map(d =>
-                    d.toISOString().slice(0, 10)
-                );
-                const nextDays = 3;
+                const prevDateStrs = prevDates.map(d =>formatDate(d));
                 const prevPromises = prevDateStrs.map(date =>
                     getWeather(lat, lon, "history", 1, formatDate(new Date(date))).then(data => {
                         console.log(formatDate(new Date(date)));
@@ -38,6 +35,7 @@ export const WeatherCalendar = ({ lat, lon }) => {
                     })
                 );
                 const currentPromise = getWeather(lat, lon, "current");
+                const nextDays = 4;
                 const nextPromise = getWeather(lat, lon, "forecast", nextDays);
 
                 const [prev1, prev2, current, next] = await Promise.all([
@@ -49,7 +47,7 @@ export const WeatherCalendar = ({ lat, lon }) => {
                 setWeatherData({
                     previous: [prev1, prev2],
                     current,
-                    next: next.forecast.forecastday
+                    next: next.forecast.forecastday.slice(1)
                 });
             } catch (err) {
                 setWeatherData({ previous: [], current: null, next: [] });
@@ -67,7 +65,7 @@ export const WeatherCalendar = ({ lat, lon }) => {
                 <WeatherDay
                     key={`prev-${idx}`}
                     type="past"
-                    date={day.location.localtime}
+                    date={day.forecast.forecastday[0].date}
                     data={day.forecast.forecastday[0].day}
                 />
             ))}

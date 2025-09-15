@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Login_Register() {
@@ -14,7 +14,33 @@ export default function Login_Register() {
     location: "",
     role: "",
   });
+
+  const [randomImage, setRandomImage] = useState(null);
+  const [passwordError, setPasswordError] = useState("");
   const navigate = useNavigate();
+
+  // Regex para validar contraseña: 8+ caracteres, 1 mayúscula, 1 carácter especial
+  const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      try {
+        const res = await fetch(
+          "https://symmetrical-space-invention-69wpqj5xp6gph5qx5-3001.app.github.dev/api/poiimages"
+        );
+        const data = await res.json();
+
+        if (data.images?.length > 0) {
+          const randomIndex = Math.floor(Math.random() * data.images.length);
+          setRandomImage(data.images[randomIndex].url);
+        }
+      } catch (err) {
+        console.error("❌ Error cargando imágenes:", err);
+      }
+    };
+
+    fetchImages();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -23,7 +49,6 @@ export default function Login_Register() {
     });
   };
 
-  // convierte YYYY-MM-DD → MM/DD/YYYY
   const formatDateToMMDDYYYY = (isoDate) => {
     if (!isoDate) return "";
     const [year, month, day] = isoDate.split("-");
@@ -33,9 +58,28 @@ export default function Login_Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!isSignIn) {
+      // Validación de contraseña
+      if (!passwordRegex.test(formData.password)) {
+        setPasswordError(
+          "La contraseña debe tener mínimo 8 caracteres, al menos 1 mayúscula y 1 carácter especial"
+        );
+        return;
+      }
+
+      // Validación de confirm_password
+      if (formData.password !== formData.confirm_password) {
+        setPasswordError("Las contraseñas no coinciden");
+        return;
+      }
+
+      // Si todo bien, limpia el error
+      setPasswordError("");
+    }
+
     let url = isSignIn
-      ? "https://psychic-space-fiesta-r4wxqj65x57jcwjxq-3001.app.github.dev/api/login"
-      : "https://psychic-space-fiesta-r4wxqj65x57jcwjxq-3001.app.github.dev/api/register";
+      ? "https://symmetrical-space-invention-69wpqj5xp6gph5qx5-3001.app.github.dev/api/login"
+      : "https://symmetrical-space-invention-69wpqj5xp6gph5qx5-3001.app.github.dev/api/register";
 
     let body = isSignIn
       ? {
@@ -43,7 +87,7 @@ export default function Login_Register() {
           password: formData.password,
         }
       : {
-          name: `${formData.first_name} ${formData.last_name}`, // nombre completo
+          name: `${formData.first_name} ${formData.last_name}`,
           user_name: formData.user_name,
           email: formData.email,
           password: formData.password,
@@ -69,7 +113,6 @@ export default function Login_Register() {
 
     if (isSignIn) {
       sessionStorage.setItem("token", data.token);
-      alert("✅ Login exitoso");
       navigate("/dashboard");
     } else {
       alert("✅ Registro exitoso, ahora inicia sesión");
@@ -81,19 +124,32 @@ export default function Login_Register() {
     <div className="container-fluid vh-100 vw-100">
       <div className="row h-100">
         {/* Columna imagen */}
-        <div className="col-md-6 bg-light d-flex flex-column justify-content-between align-items-center p-3 h-100">
-          <div className="flex-grow-1 d-flex justify-content-center align-items-center w-100">
-            <span className="display-6 text-muted">&lt;IMG&gt;</span>
+        <div className="col-md-6 bg-light d-flex flex-column justify-content-between align-items-center h-100">
+          <div className="flex-grow-1 d-flex justify-content-center align-items-center w-100 border-rounded">
+            {randomImage ? (
+              <img
+                src={randomImage}
+                alt="Imagen aleatoria"
+                className="w-100 h-100"
+                style={{ objectFit: "cover" }}
+              />
+            ) : (
+              <span className="display-6 text-muted">Cargando...</span>
+            )}
           </div>
           <div className="d-flex w-100">
             <button
-              className={`btn flex-fill ${isSignIn ? "btn-primary" : "btn-outline-primary"}`}
+              className={`btn flex-fill ${
+                isSignIn ? "btn-primary" : "btn-outline-primary"
+              }`}
               onClick={() => setIsSignIn(true)}
             >
               SIGN IN
             </button>
             <button
-              className={`btn flex-fill ${!isSignIn ? "btn-primary" : "btn-outline-primary"}`}
+              className={`btn flex-fill ${
+                !isSignIn ? "btn-primary" : "btn-outline-primary"
+              }`}
               onClick={() => setIsSignIn(false)}
             >
               SIGN UP
@@ -106,7 +162,9 @@ export default function Login_Register() {
           <div className="text-center mb-4">
             <h3>{isSignIn ? "Welcome back!" : "Register Now!"}</h3>
             <p className="text-muted">
-              {isSignIn ? "Please enter your details" : "Register now to start your journey!"}
+              {isSignIn
+                ? "Please enter your details"
+                : "Register now to start your journey!"}
             </p>
           </div>
 
@@ -120,7 +178,6 @@ export default function Login_Register() {
                     type="email"
                     className="form-control"
                     name="email"
-                    // value={formData.email}
                     onChange={handleChange}
                     required
                   />
@@ -128,10 +185,9 @@ export default function Login_Register() {
                 <div className="mb-3">
                   <label className="form-label">Password</label>
                   <input
-                    type="password"
+                    type="password"                    
                     className="form-control"
                     name="password"
-                    // value={formData.password}
                     onChange={handleChange}
                     required
                   />
@@ -191,28 +247,38 @@ export default function Login_Register() {
                     required
                   />
                 </div>
+
                 <div className="mb-3">
                   <label className="form-label">Password</label>
                   <input
                     type="password"
-                    className="form-control"
+                    className={`form-control ${
+                      passwordError ? "is-invalid" : ""
+                    }`}
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
                     required
                   />
+                  {passwordError && (
+                    <div className="invalid-feedback">{passwordError}</div>
+                  )}
                 </div>
+
                 <div className="mb-3">
                   <label className="form-label">Confirm Password</label>
                   <input
                     type="password"
-                    className="form-control"
+                    className={`form-control ${
+                      passwordError ? "is-invalid" : ""
+                    }`}
                     name="confirm_password"
                     value={formData.confirm_password}
                     onChange={handleChange}
                     required
                   />
                 </div>
+
                 <div className="mb-3">
                   <label className="form-label">Date of Birth</label>
                   <input
@@ -232,17 +298,6 @@ export default function Login_Register() {
                     className="form-control"
                     name="location"
                     value={formData.location}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label">Role (optional)</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="role"
-                    value={formData.role}
                     onChange={handleChange}
                   />
                 </div>
