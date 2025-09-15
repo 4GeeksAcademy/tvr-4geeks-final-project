@@ -1,25 +1,41 @@
-import React, { useEffect, useRef } from "react";
-// CDN o paquete; ejemplo con CDN UMD:
-import "https://cdn.maptiler.com/maptiler-sdk-js/v1.0.0/maptiler-sdk.css";
+import React, { useEffect, useRef, useState } from "react";
 
-export const MapComponent = ({ lat, long, zoom = 15, style = "basic-v2" }) => {
+export const MapComponent = ({ lat, long, zoom = 15 }) => {
   const ref = useRef(null);
+  const [style, setStyle] = useState("basic");
 
   useEffect(() => {
-    (async () => {
-      const sdk = await import("https://cdn.maptiler.com/maptiler-sdk-js/v1.0.0/maptiler-sdk.umd.js");
-      sdk.maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY;
+    const sdk = window.maptilersdk;
+    if (!sdk || !ref.current) return;
 
-      const map = new sdk.maptilersdk.Map({
-        container: ref.current,
-        style: sdk.maptilersdk.MapStyle[style.toUpperCase().replace("-", "_")] || style,
-        center: [long, lat], // orden [lon, lat]
-        zoom
-      });
+    sdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY;
 
-      new sdk.maptilersdk.Marker().setLngLat([long, lat]).addTo(map);
-    })();
+    const map = new sdk.Map({
+      container: ref.current,
+      style: style === "satellite" ? sdk.MapStyle.SATELLITE : sdk.MapStyle.BASIC,
+      center: [long, lat],
+      zoom
+    });
+
+    new sdk.Marker().setLngLat([long, lat]).addTo(map);
+
+    return () => map.remove();
   }, [lat, long, zoom, style]);
 
-  return <div ref={ref} style={{ width: "100%", height: "100%" }} />;
+  return (
+    <div className="w-100 h-100 position-relative">
+      {/* Selector */}
+      <select
+        value={style}
+        onChange={(e) => setStyle(e.target.value)}
+        className="form-select position-absolute m-2"
+        style={{ width: "150px", zIndex: 2, top: 0, left: 0 }}
+      >
+        <option value="basic">Map</option>
+        <option value="satellite">Satellite</option>
+      </select>
+
+      <div ref={ref} style={{ width: "100%", height: "100%" }} />
+    </div>
+  );
 };
