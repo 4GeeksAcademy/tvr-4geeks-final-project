@@ -20,6 +20,7 @@ export async function getWeather(lat, long, type = "current", days = 1, date = "
     if (!response.ok) {
         throw new Error("Network response was not ok");
     }
+    console.log(response)
     return await response.json();
 }
 

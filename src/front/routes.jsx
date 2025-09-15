@@ -13,6 +13,7 @@ import { DetailsView } from "./pages/DetailsView";
 import ProtectedRoute from "./components/ProtectedRoute"
 import Dashboard from "./pages/Dashboard";
 import Login_Register from "./pages/Login_Register";
+import { LocationList } from "./pages/LocationList";
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -27,10 +28,11 @@ export const router = createBrowserRouter(
 
         {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
         <Route path= "/" element={<Home />} />
-        <Route path="/details" element={<DetailsView />} />
+        <Route path="/details/:Id" element={<DetailsView />} />
         <Route path="/single/:theId" element={ <Single />} />  {/* Dynamic route for single items */}
         <Route path="/demo" element={<Demo />} />
         <Route path="/login-register" element={<Login_Register />} />
+        <Route path="/locations" element={<LocationList />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />}/>
         </Route>
