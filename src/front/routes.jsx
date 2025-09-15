@@ -13,6 +13,7 @@ import { DetailsView } from "./pages/DetailsView";
 import ProtectedRoute from "./components/ProtectedRoute"
 import Dashboard from "./pages/Dashboard";
 import Login_Register from "./pages/Login_Register";
+import { LocationList } from "./pages/LocationList";
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -30,6 +31,7 @@ export const router = createBrowserRouter(
         <Route path="/details/:Id" element={<DetailsView />} />
         <Route path="/single/:theId" element={ <Single />} />  {/* Dynamic route for single items */}
         <Route path="/demo" element={<Demo />} />
+        <Route path="/locations" element={<LocationList />} />
         <Route path="/login_Register" element={<Login_Register />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />}/>
