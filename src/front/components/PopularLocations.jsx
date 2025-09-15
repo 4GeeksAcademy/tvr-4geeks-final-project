@@ -100,7 +100,7 @@ export const PopularLocations = () => {
                       <button
                         className="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow"
                         style={{ width: "40px", height: "40px" }}
-                        onClick={() => navigate(`/pois/${card.id}`)}
+                        onClick={() => navigate(`/details/${card.id}`)}
                       >
                         <FontAwesomeIcon
                           icon={faLocationArrow}
