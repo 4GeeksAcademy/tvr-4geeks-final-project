@@ -113,7 +113,7 @@ export default function Login_Register() {
     }
 
     if (isSignIn) {
-      sessionStorage.setItem("token", data.token);
+      sessionStorage.setItem("token", data.access_token);
       window.dispatchEvent(new Event("loginChange"));
       navigate("/dashboard");
     } else {
