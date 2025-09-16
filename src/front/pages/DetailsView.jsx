@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import { PoiImagesCarousel } from "../components/PoiImagesCarousel";
 import { WeatherCalendar } from "../components/WeatherCalendar";
 import { MapComponent } from "../components/MapComponent";
@@ -32,7 +32,6 @@ export const DetailsView = () => {
 
     useEffect(() => {
         const token = sessionStorage.getItem("token");
-        console.log("Token:", token);
         setIsLoggedIn(!!token);
         if (token && Id) {
             isFavorite(Id, token)
@@ -45,7 +44,7 @@ export const DetailsView = () => {
             setIsFav(false);
             setIsVisit(false);
         }
-    }, [Id, isFav, isVisit]);
+    }, [Id]);
     const handleVisited = async () => {
         const token = sessionStorage.getItem("token");
         if (!token) return;

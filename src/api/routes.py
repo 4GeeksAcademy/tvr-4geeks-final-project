@@ -435,7 +435,7 @@ def favorites():
     try:
         favorites = db.session.query(Favorite, Poi).join(
             Poi, Favorite.poi_id == Poi.id).filter(Favorite.user_id == user.id).all()
-        return jsonify({'message': 'Favorites retrieved successfully', 'favorites': [[poi.id, poi.name] for _, poi in favorites]}), 200
+        return jsonify({'message': 'Favorites retrieved successfully', 'favorites': [{poi.id, poi.name} for _, poi in favorites]}), 200
     except APIException:
         raise
     except Exception:
@@ -746,7 +746,7 @@ def get_visited_pois():
     try:
         visited = db.session.query(Visited, Poi).join(
             Poi, Visited.poi_id == Poi.id).filter(Visited.user_id == user.id).all()
-        return jsonify({'message': 'Visited POIs retrieved successfully', 'visited': [poi.serialize() for _, poi in visited]}), 200
+        return jsonify({'message': 'Visited POIs retrieved successfully', 'visited': [{poi.id, poi.name} for _, poi in visited]}), 200
     except APIException:
         raise
     except Exception:
