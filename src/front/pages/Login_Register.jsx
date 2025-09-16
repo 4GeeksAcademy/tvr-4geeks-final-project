@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 export default function Login_Register() {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -26,7 +27,7 @@ export default function Login_Register() {
     const fetchImages = async () => {
       try {
         const res = await fetch(
-          "https://symmetrical-space-invention-69wpqj5xp6gph5qx5-3001.app.github.dev/api/poiimages"
+          `${BACKEND_URL}/api/poiimages`
         );
         const data = await res.json();
 
@@ -78,8 +79,8 @@ export default function Login_Register() {
     }
 
     let url = isSignIn
-      ? "https://symmetrical-space-invention-69wpqj5xp6gph5qx5-3001.app.github.dev/api/login"
-      : "https://symmetrical-space-invention-69wpqj5xp6gph5qx5-3001.app.github.dev/api/register";
+      ? `${BACKEND_URL}/api/login`
+      : `${BACKEND_URL}/api/register`;
 
     let body = isSignIn
       ? {
@@ -113,6 +114,7 @@ export default function Login_Register() {
 
     if (isSignIn) {
       sessionStorage.setItem("token", data.token);
+      window.dispatchEvent(new Event("loginChange"));
       navigate("/dashboard");
     } else {
       alert("✅ Registro exitoso, ahora inicia sesión");
