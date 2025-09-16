@@ -1,5 +1,6 @@
 export async function isVisited(poiId, token) {
   if (!token) throw new Error("Authentication token is required");
+  console.log("Checking visited for POI ID:", poiId, "with token:", token);
   const url = `${baseUrl}/api/visited`;
   const response = await fetch(url, {
     method: "GET",
@@ -11,8 +12,11 @@ export async function isVisited(poiId, token) {
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
-  const visited = await response.json();
-  return visited.some((visit) => String(visit.poi_id) === String(poiId));
+  const data = await response.json();
+  const visitedList = Array.isArray(data) ? data : data.visited || [];
+  return visitedList.some(
+    (visit) => String(visit.poi_id ?? visit.id) === String(poiId)
+  );
 }
 
 export async function addVisited(poiId, token) {
@@ -94,8 +98,11 @@ export async function isFavorite(poiId, token) {
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
-  const favorites = await response.json();
-  return favorites.some((fav) => String(fav.poi_id) === String(poiId));
+  const data = await response.json();
+  const favoritesList = Array.isArray(data) ? data : data.favorites || [];
+  return favoritesList.some(
+    (fav) => String(fav.poi_id ?? fav.id) === String(poiId)
+  );
 }
 
 export async function addFavorite(poiId, token) {

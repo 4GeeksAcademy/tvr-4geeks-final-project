@@ -32,6 +32,7 @@ export const DetailsView = () => {
 
     useEffect(() => {
         const token = sessionStorage.getItem("token");
+        console.log("Token:", token);
         setIsLoggedIn(!!token);
         if (token && Id) {
             isFavorite(Id, token)
