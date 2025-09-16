@@ -2,16 +2,17 @@ import React, { useEffect, useState, useContext } from "react";
 import { PoiImagesCarousel } from "../components/PoiImagesCarousel";
 import { WeatherCalendar } from "../components/WeatherCalendar";
 import { MapComponent } from "../components/MapComponent";
-import { getPoiDetails, getPoiTags, isFavorite, addFavorite, removeFavorite } from "../apicalls/detailsApicalls";
+import { getPoiDetails, getPoiTags, isFavorite, addFavorite, removeFavorite, isVisited, addVisited, removeVisited } from "../apicalls/detailsApicalls";
 import { useParams } from "react-router-dom";
 
 export const DetailsView = () => {
-    const { Id} = useParams();
+    const { Id } = useParams();
     const [poi, setPoi] = useState(null);
     const [tags, setTags] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isFav, setIsFav] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isVisit, setIsVisit] = useState(false);
     useEffect(() => {
         const fetchDetails = async () => {
             setLoading(true);
@@ -29,18 +30,37 @@ export const DetailsView = () => {
         if (Id) fetchDetails();
     }, [Id]);
 
-    // Chequea si el usuario está logeado y si el POI es favorito
     useEffect(() => {
         const token = sessionStorage.getItem("token");
+        console.log("Token:", token);
         setIsLoggedIn(!!token);
         if (token && Id) {
-            isFavorite(token, Id)
+            isFavorite(Id, token)
                 .then(fav => setIsFav(fav))
                 .catch(() => setIsFav(false));
+            isVisited(Id, token)
+                .then(visited => setIsVisit(visited))
+                .catch(() => setIsVisit(false));
         } else {
             setIsFav(false);
+            setIsVisit(false);
         }
-    }, [Id]);
+    }, [Id, isFav, isVisit]);
+    const handleVisited = async () => {
+        const token = sessionStorage.getItem("token");
+        if (!token) return;
+        try {
+            if (isVisit) {
+                await removeVisited(Id, token);
+                setIsVisit(false);
+            } else {
+                await addVisited(Id, token);
+                setIsVisit(true);
+            }
+        } catch (err) {
+            alert("Error:" + err.message);
+        }
+    };
 
     const handleFavorite = async () => {
         const token = sessionStorage.getItem("token");
@@ -54,7 +74,7 @@ export const DetailsView = () => {
                 setIsFav(true);
             }
         } catch (err) {
-            alert("Error updating favorite status");
+            alert("Error:" + err.message);
         }
     };
 
@@ -83,12 +103,20 @@ export const DetailsView = () => {
                             <WeatherCalendar lat={poi.latitude} lon={poi.longitude} />
                         </div>
                         {isLoggedIn && (
-                            <button
-                                onClick={handleFavorite}
-                                className={`btn ${isFav ? "btn-danger" : "btn-primary"} w-100`}
-                            >
-                                {isFav ? "Remove from favorites" : "Add to favorites"}
-                            </button>
+                            <div className="d-flex gap-2">
+                                <button
+                                    onClick={handleFavorite}
+                                    className={`btn ${isFav ? "btn-danger" : "btn-primary"} flex-fill`}
+                                >
+                                    {isFav ? "Remove from favorites" : "Add to favorites"}
+                                </button>
+                                <button
+                                    onClick={handleVisited}
+                                    className={`btn ${isVisit ? "btn-success" : "btn-outline-success"} flex-fill`}
+                                >
+                                    {isVisit ? "Visited" : "Mark as visited"}
+                                </button>
+                            </div>
                         )}
                     </div>
                     {/* Map */}
