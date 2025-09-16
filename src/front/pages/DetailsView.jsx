@@ -114,7 +114,7 @@ export const DetailsView = () => {
                                     onClick={handleVisited}
                                     className={`btn ${isVisit ? "btn-success" : "btn-outline-success"} flex-fill`}
                                 >
-                                    {isVisit ? "Visited" : "Mark as visited"}
+                                    {isVisit ? "Remove from visited" : "Mark as visited"}
                                 </button>
                             </div>
                         )}
