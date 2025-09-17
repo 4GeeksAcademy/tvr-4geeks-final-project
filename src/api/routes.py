@@ -435,7 +435,17 @@ def favorites():
     try:
         favorites = db.session.query(Favorite, Poi).join(
             Poi, Favorite.poi_id == Poi.id).filter(Favorite.user_id == user.id).all()
-        return jsonify({'message': 'Favorites retrieved successfully', 'favorites': [[poi.id, poi.name] for _, poi in favorites]}), 200
+        favorites_list = [
+            {
+                'poi_id': poi.id,
+                'poi_name': poi.name
+            }
+            for _, poi in favorites
+        ]
+        return jsonify({
+            'message': 'Favorites retrieved successfully',
+            'favorites': favorites_list
+        }), 200
     except APIException:
         raise
     except Exception:
@@ -746,7 +756,17 @@ def get_visited_pois():
     try:
         visited = db.session.query(Visited, Poi).join(
             Poi, Visited.poi_id == Poi.id).filter(Visited.user_id == user.id).all()
-        return jsonify({'message': 'Visited POIs retrieved successfully', 'visited': [poi.serialize() for _, poi in visited]}), 200
+        visited_list = [
+            {
+                'poi_id': poi.id,
+                'poi_name': poi.name
+            }
+            for _, poi in visited
+        ]
+        return jsonify({
+            'message': 'Visited POIs retrieved successfully',
+            'visited': visited_list
+        }), 200
     except APIException:
         raise
     except Exception:
@@ -1630,3 +1650,31 @@ def delete_poi_image(image_id):
     except Exception:
         db.session.rollback()
         handle_unexpected_error('deleting POI image')
+
+
+@api.route('/<string:country_name>/cities', methods=['GET'])
+def get_cities_by_country(country_name):
+    """
+    Retrieve all cities within a given country.
+    Args:
+        country_name (str): Country name.
+    Body:
+        None.
+    Raises:
+        APIException: If the country does not exist or an unexpected error occurs.
+    Returns:
+        Response: JSON list of cities. Returns an empty list if none are found.
+    """
+    try:
+        country = get_object_or_404(
+            Country,
+            unique_field_value=country_name,
+            not_found_message='Country not found',
+            field_name='name'
+        )
+        cities = City.query.filter_by(country_id=country.id).all()
+        return jsonify({'message': 'Cities retrieved successfully', 'cities': [city.serialize() for city in cities]}), 200
+    except APIException:
+        raise
+    except Exception:
+        handle_unexpected_error('retrieving cities by country')
