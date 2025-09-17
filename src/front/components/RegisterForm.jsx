@@ -1,5 +1,6 @@
 import { useState } from "react";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import { registerUser } from "../apicalls/loginRegisterApicalls";
 
 export default function RegisterForm({ setApiError, setIsSignIn }) {
     const [formData, setFormData] = useState({
@@ -46,7 +47,6 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
             return;
         }
         setPasswordError("");
-        const url = `${BACKEND_URL}/api/register`;
         const body = {
             name: `${formData.first_name} ${formData.last_name}`,
             user_name: formData.user_name,
@@ -56,13 +56,8 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
             location: formData.location || null,
             role: formData.role || null,
         };
-        const resp = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-        });
-        const data = await resp.json();
-        if (!resp.ok) {
+        const { ok, data } = await registerUser(body);
+        if (!ok) {
             setApiError("❌ " + (data.message || "Request error"));
             return;
         }

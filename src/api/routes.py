@@ -217,15 +217,14 @@ def login():
     """
     body = request.get_json()
     body = require_json_object(body, context='login')
-    user_name = body.get('user_name')
-    email = body.get('email')
+    credential = body.get('credential')
     password = body.get('password')
 
-    if not (email or user_name) or not password:
+    if not credential or not password:
         raise APIException(
             'Email or user_name and password are required', status_code=400)
-    user = User.query.filter_by(email=email).first(
-    ) or User.query.filter_by(user_name=user_name).first()
+    user = User.query.filter_by(email=credential).first(
+    ) or User.query.filter_by(user_name=credential).first()
     if not user:
         raise APIException('Invalid email or user_name', status_code=401)
     if not check_password_hash(user.password, password):

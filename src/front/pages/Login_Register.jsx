@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
+import { fetchPoiImages } from "../apicalls/loginRegisterApicalls";
 
 export default function Login_Register() {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -8,12 +9,10 @@ export default function Login_Register() {
   const [apiError, setApiError] = useState("");
 
   useEffect(() => {
-    const fetchImages = async () => {
+    const loadImages = async () => {
       try {
-        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-        const res = await fetch(`${BACKEND_URL}/api/poiimages`);
-        const data = await res.json();
-        if (data.images?.length > 0) {
+        const { ok, data } = await fetchPoiImages();
+        if (ok && data.images?.length > 0) {
           const randomIndex = Math.floor(Math.random() * data.images.length);
           setRandomImage(data.images[randomIndex].url);
         }
@@ -21,40 +20,39 @@ export default function Login_Register() {
         console.error("❌ Error loading images:", err);
       }
     };
-    fetchImages();
+    loadImages();
   }, []);
 
   return (
-    <div className="container-fluid vh-100 vw-100">
+    <div className="container-fluid vw-100" style={{ height: "90vh" }}>
       <div className="row h-100">
         {/* Image column */}
-        <div className="col-md-6 bg-light d-flex flex-column justify-content-between align-items-center h-100">
-          <div className="flex-grow-1 d-flex justify-content-center align-items-center w-100 border-rounded">
+        <div className="col-md-6 d-flex flex-column justify-content-between align-items-center h-100 p-0">
+          <div className="flex-grow-1 d-flex justify-content-center align-items-center w-100">
             {randomImage ? (
               <img
                 src={randomImage}
                 alt="Random image"
-                className="w-100 h-100"
-                style={{ objectFit: "cover" }}
+                className="w-100 h-100 object-fit-cover"
               />
             ) : (
               <span className="display-6 text-muted">Loading...</span>
             )}
           </div>
-          <div className="d-flex w-100">
+          <div className="d-flex w-100 ">
             <button
-              className={`btn flex-fill ${isSignIn ? "btn-primary" : "btn-outline-primary"
-                }`}
+              className={`flex-fill fw-bold py-2 ${isSignIn ? "bg-primary text-white" : "bg-white text-primary"}`}
+              style={{ border: "none", borderRadius: 0, outline: "none" }}
               onClick={() => setIsSignIn(true)}
             >
-              SIGN IN
+              Log in
             </button>
             <button
-              className={`btn flex-fill ${!isSignIn ? "btn-primary" : "btn-outline-primary"
-                }`}
+              className={`flex-fill fw-bold py-2 ${!isSignIn ? "bg-primary text-white" : "bg-white text-primary"}`}
+              style={{ border: "none", borderRadius: 0, outline: "none" }}
               onClick={() => setIsSignIn(false)}
             >
-              SIGN UP
+              Register
             </button>
           </div>
         </div>

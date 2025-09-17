@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import { loginUser } from "../apicalls/loginRegisterApicalls";
 
 export default function LoginForm({ setApiError }) {
     const [formData, setFormData] = useState({
-        emaillogin: "",
+        credential: "",
         passwordlogin: "",
     });
     const navigate = useNavigate();
@@ -16,22 +16,15 @@ export default function LoginForm({ setApiError }) {
         });
     };
 
+    const request = {
+        credential: formData.credential,
+        password: formData.passwordlogin
+    }
     const handleSubmit = async (e) => {
         e.preventDefault();
         setApiError("");
-        const url = `${BACKEND_URL}/api/login`;
-        const body = {
-            email: formData.emaillogin,
-            password: formData.passwordlogin,
-        };
-        const resp = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-        });
-        const data = await resp.json();
-        console.log("Login response data:", data);
-        if (!resp.ok) {
+        const { ok, data } = await loginUser(request);
+        if (!ok) {
             setApiError("❌ " + (data.message || "Request error"));
             return;
         }
@@ -43,11 +36,11 @@ export default function LoginForm({ setApiError }) {
     return (
         <form onSubmit={handleSubmit} className="flex-grow-1">
             <div className="mb-3">
-                <label className="form-label">Email</label>
+                <label className="form-label">Email or useranme</label>
                 <input
                     type="text"
                     className="form-control"
-                    name="emaillogin"
+                    name="credential"
                     onChange={handleChange}
                     required
                     autoComplete="off"
