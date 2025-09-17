@@ -24,10 +24,10 @@ export default function Login_Register() {
   }, []);
 
   return (
-    <div className="container-fluid vw-100" style={{ height: "90vh" }}>
-      <div className="row h-100">
+    <div className="container-fluid vw-100 flex-grow-1 d-flex flex-column">
+      <div className="row flex-grow-1 h-100 w-100">
         {/* Image column */}
-        <div className="col-md-6 d-flex flex-column justify-content-between align-items-center h-100 p-0">
+        <div className="col-md-6 d-flex justify-content-between align-items-center h-100 p-0">
           <div className="flex-grow-1 d-flex justify-content-center align-items-center w-100">
             {randomImage ? (
               <img
