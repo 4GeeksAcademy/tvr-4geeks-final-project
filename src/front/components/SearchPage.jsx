@@ -177,7 +177,6 @@ export function SearchPage() {
   return (
     <div className="container-fluid py-4">
       <div className="row">
-        {/* Filters */}
         <aside className="col-md-3 bg-light p-3">
           <h5 className="mb-3 fw-bold">Filters</h5>
           <div className="mb-3">
