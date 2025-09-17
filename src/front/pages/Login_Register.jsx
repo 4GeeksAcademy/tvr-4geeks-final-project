@@ -24,7 +24,7 @@ export default function Login_Register() {
   }, []);
 
   return (
-    <div className="container-fluid vw-100 h-100">
+    <div className="container-fluid vw-100" style={{ height: "90vh" }}>
       <div className="row h-100">
         {/* Image column */}
         <div className="col-md-6 d-flex flex-column justify-content-between align-items-center h-100 p-0">
