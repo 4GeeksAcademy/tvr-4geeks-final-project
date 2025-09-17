@@ -1,6 +1,21 @@
+
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 export const Navbar = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkLogin = () => setIsLoggedIn(!!sessionStorage.getItem("token"));
+    checkLogin();
+    window.addEventListener("storage", checkLogin);
+    window.addEventListener("loginChange", checkLogin);
+    return () => {
+      window.removeEventListener("storage", checkLogin);
+      window.removeEventListener("loginChange", checkLogin);
+    };
+  }, []);
+
   return (
     <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-3">
       <div className="container">
@@ -39,12 +54,21 @@ export const Navbar = () => {
               </Link>
             </li>
             <li className="nav-item ms-lg-3">
-              <Link
-                to="/login-register"
-                className="btn btn-primary fw-semibold rounded-pill px-4 shadow-sm"
-              >
-                Sign Up
-              </Link>
+              {isLoggedIn ? (
+                <Link
+                  to="/dashboard"
+                  className="nav-link fw-semibold"
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <Link
+                  to="/login-register"
+                  className="btn btn-primary fw-semibold rounded-pill px-4 shadow-sm"
+                >
+                  Sign Up
+                </Link>
+              )}
             </li>
           </ul>
         </div>
