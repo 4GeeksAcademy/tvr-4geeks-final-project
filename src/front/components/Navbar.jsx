@@ -61,10 +61,10 @@ export const Navbar = () => {
             <li className="nav-item ms-lg-3">
               {isLoggedIn ? (
                 <Link
-                  to="/dashboard"
+                  to="/myProfile"
                   className="nav-link fw-semibold"
                 >
-                  Dashboard
+                  My Profile
                 </Link>
               ) : (
                 <Link
