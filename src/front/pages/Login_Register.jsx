@@ -36,13 +36,14 @@ export default function Login_Register() {
     <div className="container-fluid vw-100 flex-grow-1 d-flex flex-column">
       <div className="row flex-grow-1 h-100 w-100">
         {/* Image column */}
-        <div className="d-flex flex-column w-50 justify-content-between align-items-center p-0">
+        <div className="d-flex flex-column justify-content-between align-items-center p-0" style={{ width: "55%" }}>
           <div className="flex-grow-1 d-flex justify-content-center align-items-center w-100">
             {randomImage ? (
               <img
                 src={randomImage}
                 alt="Random image"
                 className="w-100 h-100 object-fit-cover"
+                style={{maxHeight: "81.1vh"}}
               />
             ) : (
               <span className="display-6 text-muted p-5">{`Loading${'.'.repeat(loadingDots)}`}</span>
@@ -52,14 +53,20 @@ export default function Login_Register() {
             <button
               className={`flex-fill fw-bold py-2 ${isSignIn ? "bg-primary text-white" : "bg-white text-primary"}`}
               style={{ border: "none", borderRadius: 0, outline: "none" }}
-              onClick={() => setIsSignIn(true)}
+              onClick={() => {
+                setIsSignIn(true);
+                setApiError("");
+              }}
             >
               Log in
             </button>
             <button
               className={`flex-fill fw-bold py-2 ${!isSignIn ? "bg-primary text-white" : "bg-white text-primary"}`}
               style={{ border: "none", borderRadius: 0, outline: "none" }}
-              onClick={() => setIsSignIn(false)}
+              onClick={() => {
+                setIsSignIn(false);
+                setApiError("");
+              }}
             >
               Register
             </button>
@@ -67,8 +74,8 @@ export default function Login_Register() {
         </div>
 
         {/* Form column */}
-        <div className="w-50 bg-white p-5 d-flex flex-column justify-content-center overflow-auto">
-          <div className="text-center mb-4">
+        <div className="bg-white p-5 h-100 d-flex flex-column justify-content-center" style={{width: "45%"}}>
+          <div className="text-center justify-items-center align-items-center mb-4">
             <h3>{isSignIn ? "Welcome back!" : "Register Now!"}</h3>
             <p className="text-muted">
               {isSignIn
@@ -76,8 +83,8 @@ export default function Login_Register() {
                 : "Register now to start your journey!"}
             </p>
             {apiError && (
-              <div className="alert alert-danger py-2 px-3 mt-3" role="alert">
-                {apiError}
+              <div className="alert alert-danger py-2 px-3 mt-3 mx-auto text-center" style={{ maxWidth: "300px" }} role="alert">
+                {apiError || "Error with request, please try again."}
               </div>
             )}
           </div>

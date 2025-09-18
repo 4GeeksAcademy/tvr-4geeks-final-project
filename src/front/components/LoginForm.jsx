@@ -23,18 +23,22 @@ export default function LoginForm({ setApiError }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setApiError("");
-        const { ok, data } = await loginUser(request);
-        if (!ok) {
-            setApiError("❌ " + (data.message || "Request error"));
-            return;
+        try {
+            const { ok, data } = await loginUser(request);
+            if (!ok) {
+                setApiError("❌ " + (data && data.message ? data.message : "Request error"));
+                return;
+            }
+            sessionStorage.setItem("token", data.access_token);
+            window.dispatchEvent(new Event("loginChange"));
+            navigate("/dashboard");
+        } catch (err) {
+            setApiError("❌ Request error");
         }
-        sessionStorage.setItem("token", data.access_token);
-        window.dispatchEvent(new Event("loginChange"));
-        navigate("/dashboard");
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex-grow-1">
+        <form onSubmit={handleSubmit} className="flex-grow-1 justify-self-center align-self-center" style={{ minWidth: "300px", maxWidth: "600px" }}>
             <div className="mb-3">
                 <label className="form-label">Email or useranme</label>
                 <input

@@ -56,28 +56,32 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
             location: formData.location || null,
             role: formData.role || null,
         };
-        const { ok, data } = await registerUser(body);
-        if (!ok) {
-            setApiError("❌ " + (data.message || "Request error"));
-            return;
+        try {
+            const { ok, data } = await registerUser(body);
+            if (!ok) {
+                setApiError("❌ " + (data && data.message ? data.message : "Request error"));
+                return;
+            }
+            setFormData({
+                first_name: "",
+                last_name: "",
+                user_name: "",
+                email: "",
+                password: "",
+                confirm_password: "",
+                date_of_birth: "",
+                location: "",
+                role: "",
+            });
+            setIsSignIn(true);
+            setApiError("");
+        } catch (err) {
+            setApiError("❌ Request error");
         }
-        setFormData({
-            first_name: "",
-            last_name: "",
-            user_name: "",
-            email: "",
-            password: "",
-            confirm_password: "",
-            date_of_birth: "",
-            location: "",
-            role: "",
-        });
-        setIsSignIn(true);
-        setApiError("");
     };
 
     return (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="flex-grow-1 justify-self-center align-self-center" style={{ minWidth: "300px", maxWidth: "600px" }}>
             <div className="row">
                 <div className="col-md-6 mb-3">
                     <label className="form-label">First Name</label>
@@ -170,28 +174,28 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
             </div>
             <div className="row">
                 <div className="col-md-6 mb-3">
-                <label className="form-label">Date of Birth</label>
-                <input
-                    type="date"
-                    className="form-control"
-                    name="date_of_birth"
-                    value={formData.date_of_birth}
-                    onChange={handleChange}
-                    required
-                    title="Required format: DD/MM/YYYY"
-                />
-            </div>
-            <div className="col-md-6 mb-3">
-                <label className="form-label">Location (optional)</label>
-                <input
-                    type="text"
-                    className="form-control"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                    placeholder="Spain, Madrid"
-                />
-            </div>
+                    <label className="form-label">Date of Birth</label>
+                    <input
+                        type="date"
+                        className="form-control"
+                        name="date_of_birth"
+                        value={formData.date_of_birth}
+                        onChange={handleChange}
+                        required
+                        title="Required format: DD/MM/YYYY"
+                    />
+                </div>
+                <div className="col-md-6 mb-3">
+                    <label className="form-label">Location (optional)</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        name="location"
+                        value={formData.location}
+                        onChange={handleChange}
+                        placeholder="Spain, Madrid"
+                    />
+                </div>
             </div>
             <button className="btn btn-primary w-100" type="submit">
                 Sign Up
