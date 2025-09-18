@@ -1,6 +1,6 @@
 import React from "react";
 
-const UserModal = () => {
+const UserModal = ({user}) => {
   return (
     <div
       className="modal fade"
@@ -25,20 +25,16 @@ const UserModal = () => {
           <div className="modal-body">
             <form>
               <div className="mb-3">
-                <label className="form-label">First Name</label>
-                <input type="text" className="form-control" />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Last Name</label>
-                <input type="text" className="form-control" />
+                <label className="form-label">Full Name</label>
+                <input type="text" className="form-control" defaultValue={user?.name || ""} />
               </div>
               <div className="mb-3">
                 <label className="form-label">Email</label>
-                <input type="email" className="form-control" />
+                <input type="email" className="form-control" defaultValue={user?.email || ""} />
               </div>
               <div className="mb-3">
                 <label className="form-label">Username</label>
-                <input type="text" className="form-control" />
+                <input type="text" className="form-control" defaultValue={user?.username || ""} />
               </div>
               <div className="mb-3">
                 <label className="form-label">Password</label>
@@ -46,7 +42,7 @@ const UserModal = () => {
               </div>
               <div className="mb-3">
                 <label className="form-label">Location</label>
-                <input type="text" className="form-control" />
+                <input type="text" className="form-control" defaultValue={user?.location || ""} />
               </div>
             </form>
           </div>

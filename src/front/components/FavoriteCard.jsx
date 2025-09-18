@@ -20,7 +20,7 @@ const FavoriteCard = ({ place, description, tags }) => {
               <i className="bi bi-arrow-right"></i>
             </button>
           </div>
-          <p className="card-text mb-2">{description}</p>
+          {description && <p className="card-text mb-2">{description}</p>}
 
           {/* Tags */}
           <div>

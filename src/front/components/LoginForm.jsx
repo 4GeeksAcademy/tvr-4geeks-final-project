@@ -31,7 +31,7 @@ export default function LoginForm({ setApiError }) {
             }
             sessionStorage.setItem("token", data.access_token);
             window.dispatchEvent(new Event("loginChange"));
-            navigate("/dashboard");
+            navigate("/myProfile");
         } catch (err) {
             setApiError("❌ Request error");
         }
