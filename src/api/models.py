@@ -77,7 +77,6 @@ class City(db.Model):
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
-    img: Mapped[str] = mapped_column(String(240), nullable=False)
     season: Mapped[str] = mapped_column(String(120), nullable=False)
     country_id: Mapped[str] = mapped_column(
         db.ForeignKey('country.id'), nullable=False)
@@ -90,7 +89,6 @@ class City(db.Model):
         return {
             "id": self.id,
             "name": self.name,
-            "img": self.img,
             "season": self.season,
             "country_id": self.country_id,
             "pois": [poi.id for poi in self.pois]

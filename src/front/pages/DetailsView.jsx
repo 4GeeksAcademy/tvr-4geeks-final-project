@@ -3,10 +3,11 @@ import { PoiImagesCarousel } from "../components/PoiImagesCarousel";
 import { WeatherCalendar } from "../components/WeatherCalendar";
 import { MapComponent } from "../components/MapComponent";
 import { getPoiDetails, getPoiTags, isFavorite, addFavorite, removeFavorite, isVisited, addVisited, removeVisited } from "../apicalls/detailsApicalls";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 export const DetailsView = () => {
     const { Id } = useParams();
+    const navigate = useNavigate();
     const [poi, setPoi] = useState(null);
     const [tags, setTags] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -141,7 +142,7 @@ export const DetailsView = () => {
                         <button
                             key={tag.id}
                             className="btn btn-outline-secondary btn-sm"
-                            disabled
+                            onClick={() => navigate(`/locations?tag_name=${encodeURIComponent(tag.name)}`)}
                         >
                             {tag.name}
                         </button>
