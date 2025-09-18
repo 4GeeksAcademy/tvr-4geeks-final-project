@@ -7,6 +7,7 @@ export default function Login_Register() {
   const [isSignIn, setIsSignIn] = useState(true);
   const [randomImage, setRandomImage] = useState(null);
   const [apiError, setApiError] = useState("");
+  const [loadingDots, setLoadingDots] = useState(3);
 
   useEffect(() => {
     const loadImages = async () => {
@@ -23,11 +24,19 @@ export default function Login_Register() {
     loadImages();
   }, []);
 
+  useEffect(() => {
+    if (randomImage) return;
+    const interval = setInterval(() => {
+      setLoadingDots(prev => (prev === 3 ? 1 : prev + 1));
+    }, 350);
+    return () => clearInterval(interval);
+  }, [randomImage]);
+
   return (
     <div className="container-fluid vw-100 flex-grow-1 d-flex flex-column">
       <div className="row flex-grow-1 h-100 w-100">
         {/* Image column */}
-        <div className="col-md-6 d-flex justify-content-between align-items-center h-100 p-0">
+        <div className="d-flex flex-column w-50 justify-content-between align-items-center h-100 p-0">
           <div className="flex-grow-1 d-flex justify-content-center align-items-center w-100">
             {randomImage ? (
               <img
@@ -36,7 +45,7 @@ export default function Login_Register() {
                 className="w-100 h-100 object-fit-cover"
               />
             ) : (
-              <span className="display-6 text-muted">Loading...</span>
+              <span className="display-6 text-muted p-5">{`Loading${'.'.repeat(loadingDots)}`}</span>
             )}
           </div>
           <div className="d-flex w-100 ">
@@ -58,7 +67,7 @@ export default function Login_Register() {
         </div>
 
         {/* Form column */}
-        <div className="col-md-6 bg-white p-5 h-100 d-flex flex-column justify-content-center">
+        <div className="w-50 bg-white p-5 h-100 d-flex flex-column justify-content-center">
           <div className="text-center mb-4">
             <h3>{isSignIn ? "Welcome back!" : "Register Now!"}</h3>
             <p className="text-muted">
