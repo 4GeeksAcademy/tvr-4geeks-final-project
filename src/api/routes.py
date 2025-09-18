@@ -82,18 +82,19 @@ def get_object_or_404(model, unique_field_value, not_found_message, field_name="
     return obj
 
 
-def require_body_fields(body, fields, item_name=None):
+def require_body_fields(body, fields, item_name=None, optional_fields=None):
     """
     Ensure that the request body contains exactly the required fields and that they are not empty.
     Args:
         body: The request body (dict).
         fields: A list of required field names.
         item_name: Optional. The name of the item being validated.
+        optional_fields: Optional. A list of field names that are allowed but not required.
     Raises:
         APIException: If any required field is missing, empty, or if there are extra fields.
     """
     missing_fields = [field for field in fields if field not in body]
-    extra_fields = [field for field in body if field not in fields]
+    extra_fields = [field for field in body if field not in fields and field not in (optional_fields or [])]
     empty_fields = [field for field in fields if not body.get(field)]
 
     item_info = f" in item '{item_name}'" if item_name else ""
@@ -217,15 +218,14 @@ def login():
     """
     body = request.get_json()
     body = require_json_object(body, context='login')
-    user_name = body.get('user_name')
-    email = body.get('email')
+    credential = body.get('credential')
     password = body.get('password')
 
-    if not (email or user_name) or not password:
+    if not credential or not password:
         raise APIException(
             'Email or user_name and password are required', status_code=400)
-    user = User.query.filter_by(email=email).first(
-    ) or User.query.filter_by(user_name=user_name).first()
+    user = User.query.filter_by(email=credential).first(
+    ) or User.query.filter_by(user_name=credential).first()
     if not user:
         raise APIException('Invalid email or user_name', status_code=401)
     if not check_password_hash(user.password, password):
@@ -1183,6 +1183,8 @@ def create_poi():
         - longitude (str): Longitude.
         - country_name (str): Country name.
         - city_name (str): City name.
+        - tags (list): Optional. List of tags associated with the POI.
+        - poiimages (list): Optional. List of POI images.  
     Raises:
         APIException: If the city does not exist, a duplicate name exists in the same city, or a database error occurs.
     Returns:
@@ -1192,12 +1194,13 @@ def create_poi():
     items = normalize_body_to_list(body)
 
     created = []
+    poi_tag_relations = []
+    poi_images_relations = []
     seen_keys = set()
     for item in items:
         name = item.get('name')
         require_body_fields(
-            item, ['name', 'description', 'latitude', 'longitude', 'country_name', 'city_name'], item_name=name)
-        
+            item, ['name', 'description', 'latitude', 'longitude', 'country_name', 'city_name'], item_name=name, optional_fields=['tags', 'poiimages'])
         try:
             latitude = float(item.get('latitude'))
             longitude = float(item.get('longitude'))
@@ -1206,7 +1209,6 @@ def create_poi():
         country = Country.query.filter_by(name=item.get('country_name')).first()
         if not country:
             raise APIException(f"Country '{item.get('country_name')}' not found", status_code=400)
-
         city = City.query.filter_by(name=item.get('city_name'), country_id=country.id).first()
         if not city:
             raise APIException(f"City '{item.get('city_name')}' in country '{item.get('country_name')}' not found", status_code=400)
@@ -1217,6 +1219,18 @@ def create_poi():
         existing = Poi.query.filter_by(name=name, city_id=city.id).first()
         if existing:
             raise APIException(f"POI '{name}' already exists in this city", status_code=400)
+        tags = item.get('tags', [])
+        if not isinstance(tags, list):
+            raise APIException('tags must be a list', 400)
+        for tag in tags:
+            if not isinstance(tag, str) or not tag:
+                raise APIException('each tag must be a non-empty string', 400)
+        poiimages = item.get('poiimages', [])
+        if not isinstance(poiimages, list):
+            raise APIException('poiimages must be a list', 400)
+        for img in poiimages:
+            if not isinstance(img, str) or not img:
+                raise APIException('each poiimage must be a non-empty string', 400)
         poi = Poi(
             id=str(uuid.uuid4()),
             name=name,
@@ -1226,8 +1240,19 @@ def create_poi():
             city_id=city.id
         )
         created.append(poi)
+        for tag_name in tags:
+            tag = Tag.query.filter_by(name=tag_name).first()
+            if not tag:
+                raise APIException(f"Tag '{tag_name}' not found", status_code=404)
+            poi_tag_relations.append(PoiTag(poi_id=poi.id, tag_id=tag.id))
+        for img in poiimages:
+            poi_images_relations.append(PoiImage(id=str(uuid.uuid4()), url=img, poi_id=poi.id))
     try:
         db.session.add_all(created)
+        db.session.flush()  # Flush to assign IDs before creating PoiTag entries
+        db.session.add_all(poi_tag_relations)
+        db.session.add_all(poi_images_relations)
+
         db.session.commit()
         return jsonify({'message': 'POIs created successfully',
                         'created': [poi.serialize() for poi in created]}), 201
@@ -1460,7 +1485,6 @@ def create_city():
         None.
     Body:
         - name (str): City name.
-        - img (str): City image URL.
         - season (str): Preferred season.
         - country_name (str): Country name.
     Raises:
@@ -1476,7 +1500,7 @@ def create_city():
     for item in items:
         name = item.get('name')
         require_body_fields(
-            item, ['name', 'img', 'season', 'country_name'], item_name=name)
+            item, ['name', 'season', 'country_name'], item_name=name)
         key = f"{name}:{item.get('country_name')}"
         if key in seen_keys:
             raise APIException(f"Duplicate entry: {key}", status_code=400)
@@ -1495,7 +1519,6 @@ def create_city():
         city = City(
             id=str(uuid.uuid4()),
             name=name,
-            img=item.get('img'),
             season=item.get('season'),
             country_id=country.id
         )

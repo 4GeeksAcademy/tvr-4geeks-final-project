@@ -14,6 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 import Dashboard from "./pages/Dashboard";
 import Login_Register from "./pages/Login_Register";
 import { LocationList } from "./pages/LocationList";
+import AboutUs from "./pages/AboutUs";
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -33,6 +34,7 @@ export const router = createBrowserRouter(
         <Route path="/demo" element={<Demo />} />
         <Route path="/login-register" element={<Login_Register />} />
         <Route path="/locations" element={<LocationList />} />
+  <Route path="/about" element={<AboutUs />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />}/>
         </Route>

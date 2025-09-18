@@ -3,16 +3,18 @@ import { PoiImagesCarousel } from "../components/PoiImagesCarousel";
 import { WeatherCalendar } from "../components/WeatherCalendar";
 import { MapComponent } from "../components/MapComponent";
 import { getPoiDetails, getPoiTags, isFavorite, addFavorite, removeFavorite, isVisited, addVisited, removeVisited } from "../apicalls/detailsApicalls";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 export const DetailsView = () => {
     const { Id } = useParams();
+    const navigate = useNavigate();
     const [poi, setPoi] = useState(null);
     const [tags, setTags] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isFav, setIsFav] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isVisit, setIsVisit] = useState(false);
+    const [loadingDots, setLoadingDots] = useState(3);
     useEffect(() => {
         const fetchDetails = async () => {
             setLoading(true);
@@ -29,6 +31,14 @@ export const DetailsView = () => {
         };
         if (Id) fetchDetails();
     }, [Id]);
+
+    useEffect(() => {
+        if (!loading) return;
+        const interval = setInterval(() => {
+            setLoadingDots(prev => (prev === 3 ? 1 : prev + 1));
+        }, 350);
+        return () => clearInterval(interval);
+    }, [loading]);
 
     useEffect(() => {
         const token = sessionStorage.getItem("token");
@@ -78,63 +88,65 @@ export const DetailsView = () => {
         }
     };
 
-    if (loading) return <div className="text-center my-5">Loading...</div>;
-    if (!poi) return <div className="text-center my-5">POI not found</div>;
+    if (loading) return <div className="text-center justify-content-center align-items-center container-fluid d-flex flex-grow-1">
+        <h1>{`Loading${'.'.repeat(loadingDots)}`}</h1>
+    </div>;
+    if (!poi) return <div className="text-center justify-content-center align-items-center container-fluid d-flex flex-grow-1">
+        <h1>POI not found</h1>
+    </div>;
 
     return (
-        <div className="container-fluid">
-            <div className="row vh-100">
-                {/* Left column */}
-                <div className="col-lg-7 col-md-7 col-12 d-flex flex-column h-100">
-                    <div className="h-75">
-                        <PoiImagesCarousel poiId={Id} />
-                    </div>
-                    <div className="flex-shrink-1 overflow-auto p-3 bg-white border-top">
-                        <h2 className="h5">Description</h2>
-                        <p>{poi.description}</p>
-                    </div>
+        <div className="container-fluid d-flex flex-grow-1 p-0">
+            {/* Left column */}
+            <div className="d-flex flex-column px-4 pt-4" style={{ minHeight: 0, width: '65%' }}>
+                <div className="d-flex flex-column w-100 h-75" style={{ maxHeight: "600px" }}>
+                    <PoiImagesCarousel poiId={Id} />
                 </div>
-                {/* Right column */}
-                <div className="col-lg-5 col-md-5 col-12 d-flex flex-column h-100 bg-light border-start pe-4">
-                    {/* Info, weather and favorites */}
-                    <div className=" d-flex flex-column justify-content-between p-3">
-                        <h1 className="h4 mb-3 align-self-center">{poi.name}</h1>
-                        <div className="mb-3">
-                            <WeatherCalendar lat={poi.latitude} lon={poi.longitude} />
-                        </div>
-                        {isLoggedIn && (
-                            <div className="d-flex gap-2">
-                                <button
-                                    onClick={handleFavorite}
-                                    className={`btn ${isFav ? "btn-danger" : "btn-primary"} flex-fill`}
-                                >
-                                    {isFav ? "Remove from favorites" : "Add to favorites"}
-                                </button>
-                                <button
-                                    onClick={handleVisited}
-                                    className={`btn ${isVisit ? "btn-success" : "btn-outline-success"} flex-fill`}
-                                >
-                                    {isVisit ? "Remove from visited" : "Mark as visited"}
-                                </button>
-                            </div>
-                        )}
+                <div className="flex-shrink-1 overflow-auto p-3 bg-white border-top">
+                    <h2 className="h5">Description</h2>
+                    <p>{poi.description}</p>
+                </div>
+            </div>
+            {/* Right column */}
+            <div className="d-flex flex-column bg-light border-start pe-4" style={{ minHeight: 0, width: '35%' }}>
+                {/* Info, weather and favorites */}
+                <div className=" d-flex flex-column justify-content-between p-3">
+                    <h1 className="h4 mb-3 align-self-center">{poi.name}</h1>
+                    <div className="mb-3">
+                        <WeatherCalendar lat={poi.latitude} lon={poi.longitude} />
                     </div>
-                    {/* Map */}
-                    <div className="h-50 p-3">
-                        <MapComponent lat={poi.latitude} long={poi.longitude} />
-                    </div>
-                    {/* Tags */}
-                    <div className="p-3 d-flex flex-wrap align-items-end gap-2">
-                        {tags.map(tag => (
+                    {isLoggedIn && (
+                        <div className="d-flex gap-2">
                             <button
-                                key={tag.id}
-                                className="btn btn-outline-secondary btn-sm"
-                                disabled
+                                onClick={handleFavorite}
+                                className={`btn ${isFav ? "btn-danger" : "btn-primary"} flex-fill`}
                             >
-                                {tag.name}
+                                {isFav ? "Remove from favorites" : "Add to favorites"}
                             </button>
-                        ))}
-                    </div>
+                            <button
+                                onClick={handleVisited}
+                                className={`btn ${isVisit ? "btn-success" : "btn-outline-success"} flex-fill`}
+                            >
+                                {isVisit ? "Remove from visited" : "Mark as visited"}
+                            </button>
+                        </div>
+                    )}
+                </div>
+                {/* Map */}
+                <div className="h-50 p-3">
+                    <MapComponent lat={poi.latitude} long={poi.longitude} />
+                </div>
+                {/* Tags */}
+                <div className="p-3 d-flex flex-wrap align-items-end gap-2">
+                    {tags.map(tag => (
+                        <button
+                            key={tag.id}
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => navigate(`/locations?tag_name=${encodeURIComponent(tag.name)}`)}
+                        >
+                            {tag.name}
+                        </button>
+                    ))}
                 </div>
             </div>
         </div>
