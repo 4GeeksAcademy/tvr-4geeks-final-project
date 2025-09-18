@@ -53,6 +53,11 @@ export const Navbar = () => {
                 Locations
               </Link>
             </li>
+            <li className="nav-item">
+              <Link to="/about" className="nav-link fw-semibold">
+                About Us
+              </Link>
+            </li>
             <li className="nav-item ms-lg-3">
               {isLoggedIn ? (
                 <Link

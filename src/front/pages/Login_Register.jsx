@@ -67,7 +67,7 @@ export default function Login_Register() {
         </div>
 
         {/* Form column */}
-        <div className="w-50 bg-white p-5 h-100 d-flex flex-column justify-content-center">
+        <div className="w-50 bg-white p-5 d-flex flex-column justify-content-center overflow-auto">
           <div className="text-center mb-4">
             <h3>{isSignIn ? "Welcome back!" : "Register Now!"}</h3>
             <p className="text-muted">

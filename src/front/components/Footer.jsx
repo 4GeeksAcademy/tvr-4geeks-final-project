@@ -7,7 +7,8 @@ export const Footer = () => (
 				</div>
 				<div className="col-6 text-end">
 					<a href="/" className="text-decoration-none me-3">Home</a>
-					<a href="/locations" className="text-decoration-none">Locations</a>
+					<a href="/locations" className="text-decoration-none me-3">Locations</a>
+					<a href="/about" className="text-decoration-none">About Us</a>
 				</div>
 			</div>
 		</div>

@@ -77,7 +77,7 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex-grow-1">
+        <form onSubmit={handleSubmit}>
             <div className="row">
                 <div className="col-md-6 mb-3">
                     <label className="form-label">First Name</label>
