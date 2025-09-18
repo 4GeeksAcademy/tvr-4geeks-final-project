@@ -36,7 +36,7 @@ export default function Login_Register() {
     <div className="container-fluid vw-100 flex-grow-1 d-flex flex-column">
       <div className="row flex-grow-1 h-100 w-100">
         {/* Image column */}
-        <div className="d-flex flex-column w-50 justify-content-between align-items-center h-100 p-0">
+        <div className="d-flex flex-column w-50 justify-content-between align-items-center p-0">
           <div className="flex-grow-1 d-flex justify-content-center align-items-center w-100">
             {randomImage ? (
               <img

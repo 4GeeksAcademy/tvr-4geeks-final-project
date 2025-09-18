@@ -168,7 +168,8 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
                     autoComplete="new-password"
                 />
             </div>
-            <div className="mb-3">
+            <div className="row">
+                <div className="col-md-6 mb-3">
                 <label className="form-label">Date of Birth</label>
                 <input
                     type="date"
@@ -180,7 +181,7 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
                     title="Required format: DD/MM/YYYY"
                 />
             </div>
-            <div className="mb-3">
+            <div className="col-md-6 mb-3">
                 <label className="form-label">Location (optional)</label>
                 <input
                     type="text"
@@ -190,6 +191,7 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
                     onChange={handleChange}
                     placeholder="Spain, Madrid"
                 />
+            </div>
             </div>
             <button className="btn btn-primary w-100" type="submit">
                 Sign Up
