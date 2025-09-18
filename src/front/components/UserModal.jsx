@@ -34,7 +34,7 @@ const UserModal = ({user}) => {
               </div>
               <div className="mb-3">
                 <label className="form-label">Username</label>
-                <input type="text" className="form-control" defaultValue={user?.username || ""} />
+                <input type="text" className="form-control" defaultValue={user?.user_name || ""} />
               </div>
               <div className="mb-3">
                 <label className="form-label">Password</label>
