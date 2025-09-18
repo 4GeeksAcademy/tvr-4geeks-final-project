@@ -4,8 +4,8 @@ import PastTripCard from "../components/PastTripCard";
 import FavoriteCard from "../components/FavoriteCard";
 import RecommendationCard from "../components/RecommendationCard";
 import UserModal from "../components/UserModal";
-import PoiCarousel from "../components/PoiCarousel";
 import LocationModal from "../components/LocationModal";
+import PoiCarousel from "../components/PoiCarousel";
 import { MapComponent } from "../components/MapComponent";
 import {
   fetchAllPois,
@@ -25,19 +25,10 @@ const MyProfile = () => {
   const [favoritePois, setFavoritePois] = useState([]);
   const [visitedPois, setVisitedPois] = useState([]);
   const [suggestedPoi, setSuggestedPoi] = useState(null);
-
-  const [favoritesLoading, setFavoritesLoading] = useState(false);
-  const [visitedLoading, setVisitedLoading] = useState(false);
-  const [suggestionLoading, setSuggestionLoading] = useState(false);
-
-  const [cityPois, setCityPois] = useState([]);
-  const [cityPoisLoading, setCityPoisLoading] = useState(false);
-
+  const [updatingLocation, setUpdatingLocation] = useState(false);
   const [locationCoords, setLocationCoords] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState("");
-  const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const [updatingLocation, setUpdatingLocation] = useState(false);
 
   const countriesCacheRef = useRef(null);
   const navigate = useNavigate();
@@ -50,7 +41,6 @@ const MyProfile = () => {
         setLoading(false);
         return;
       }
-
       try {
         const { ok, data } = await fetchMyProfile(token);
         if (!ok) {
@@ -64,20 +54,17 @@ const MyProfile = () => {
         setLoading(false);
       }
     };
-
     loadProfile();
   }, []);
 
   const favoriteIds = useMemo(() => profile?.favorites || [], [profile]);
   const visitedIds = useMemo(() => profile?.visited || [], [profile]);
-
   const cityName = useMemo(() => {
     const location = profile?.location;
     if (!location) return "";
     const [cityPart] = location.split(",");
     return (cityPart || location).trim();
   }, [profile?.location]);
-
   const firstName = useMemo(() => {
     if (!profile?.name) return "Explorer";
     const [first = "Explorer"] = profile.name.split(" ");
@@ -101,13 +88,12 @@ const MyProfile = () => {
     </div>
   );
 
+  // Carga favoritos
   const loadFavoritePois = useCallback(async (ids = []) => {
     if (!Array.isArray(ids) || ids.length === 0) {
       setFavoritePois([]);
       return;
     }
-
-    setFavoritesLoading(true);
     try {
       const uniqueIds = [...new Set(ids)];
       const responses = await Promise.all(
@@ -117,32 +103,20 @@ const MyProfile = () => {
           return data.poi;
         })
       );
-
       const poiMap = new Map();
-      responses.forEach((poi) => {
-        if (poi) poiMap.set(poi.id, poi);
-      });
-
-      const ordered = ids
-        .map((id) => poiMap.get(id))
-        .filter(Boolean);
-
-      setFavoritePois(ordered);
-    } catch (favError) {
-      console.error("Error loading favorite POIs", favError);
+      responses.forEach((poi) => poi && poiMap.set(poi.id, poi));
+      setFavoritePois(ids.map((id) => poiMap.get(id)).filter(Boolean));
+    } catch (err) {
       setFavoritePois([]);
-    } finally {
-      setFavoritesLoading(false);
     }
   }, []);
 
+  // Carga visitados
   const loadVisitedPois = useCallback(async (ids = []) => {
     if (!Array.isArray(ids) || ids.length === 0) {
       setVisitedPois([]);
       return;
     }
-
-    setVisitedLoading(true);
     try {
       const uniqueIds = [...new Set(ids)];
       const responses = await Promise.all(
@@ -152,21 +126,11 @@ const MyProfile = () => {
           return data.poi;
         })
       );
-
       const poiMap = new Map();
-      responses.forEach((poi) => {
-        if (poi) poiMap.set(poi.id, poi);
-      });
+      responses.forEach((poi) => poi && poiMap.set(poi.id, poi));
+      const orderedPois = ids.map((id) => poiMap.get(id)).filter(Boolean);
 
-      const orderedPois = ids
-        .map((id) => poiMap.get(id))
-        .filter(Boolean);
-
-      if (!orderedPois.length) {
-        setVisitedPois([]);
-        return;
-      }
-
+      // Cities
       const uniqueCityIds = [
         ...new Set(orderedPois.map((poi) => poi.city_id).filter(Boolean)),
       ];
@@ -177,75 +141,52 @@ const MyProfile = () => {
           return data.city;
         })
       );
-
       const cityMap = new Map();
-      cityResponses.forEach((city) => {
-        if (city) cityMap.set(city.id, city);
-      });
+      cityResponses.forEach((city) => city && cityMap.set(city.id, city));
 
+      // Countries
       let countriesMap = countriesCacheRef.current;
       if (!countriesMap) {
         countriesMap = new Map();
         try {
           const { ok, data } = await fetchCountries();
           if (ok && Array.isArray(data?.countries)) {
-            data.countries.forEach((country) => {
-              countriesMap.set(country.id, country);
-            });
+            data.countries.forEach((c) => countriesMap.set(c.id, c));
           }
-        } catch (countriesError) {
-          console.error("Error loading countries", countriesError);
-        }
+        } catch {}
         countriesCacheRef.current = countriesMap;
       }
 
       const visitedWithGeo = orderedPois.map((poi) => {
         const city = poi.city_id ? cityMap.get(poi.city_id) : null;
-        const country =
-          city && city.country_id ? countriesMap.get(city.country_id) : null;
-        return {
-          ...poi,
-          city,
-          country,
-        };
+        const country = city && city.country_id ? countriesMap.get(city.country_id) : null;
+        return { ...poi, city, country };
       });
 
       setVisitedPois(visitedWithGeo);
-    } catch (visitedError) {
-      console.error("Error loading visited POIs", visitedError);
+    } catch {
       setVisitedPois([]);
-    } finally {
-      setVisitedLoading(false);
     }
   }, []);
 
+  // Carga recomendación
   const loadSuggestion = useCallback(
     async (favoriteList = [], visitedList = []) => {
-      setSuggestionLoading(true);
       try {
         const { ok, data } = await fetchAllPois();
         if (!ok || !Array.isArray(data?.pois)) {
           setSuggestedPoi(null);
           return;
         }
-        const excluded = new Set(
-          [...favoriteList, ...visitedList].map((id) => String(id))
-        );
-        const available = data.pois.filter(
-          (poi) => !excluded.has(String(poi.id))
-        );
+        const excluded = new Set([...favoriteList, ...visitedList].map(String));
+        const available = data.pois.filter((poi) => !excluded.has(String(poi.id)));
         if (!available.length) {
           setSuggestedPoi(null);
           return;
         }
-        const random =
-          available[Math.floor(Math.random() * available.length)];
-        setSuggestedPoi(random);
-      } catch (suggestionError) {
-        console.error("Error loading suggestion", suggestionError);
+        setSuggestedPoi(available[Math.floor(Math.random() * available.length)]);
+      } catch {
         setSuggestedPoi(null);
-      } finally {
-        setSuggestionLoading(false);
       }
     },
     []
@@ -253,86 +194,39 @@ const MyProfile = () => {
 
   useEffect(() => {
     if (!profile) return;
-
     loadFavoritePois(favoriteIds);
     loadVisitedPois(visitedIds);
     loadSuggestion(favoriteIds, visitedIds);
-  }, [
-    profile,
-    favoriteIds,
-    visitedIds,
-    loadFavoritePois,
-    loadVisitedPois,
-    loadSuggestion,
-  ]);
+  }, [profile, favoriteIds, visitedIds, loadFavoritePois, loadVisitedPois, loadSuggestion]);
 
+  // Carga coordenadas de ubicación
   useEffect(() => {
-    if (!profile) return;
-
-    if (!profile.location) {
+    if (!profile?.location) {
       setLocationCoords(null);
       setLocationError("");
-      setCityPois([]);
-      setCityPoisLoading(false);
       setLocationLoading(false);
       return;
     }
 
     let isMounted = true;
-
-    const loadLocationData = async () => {
+    const loadLocation = async () => {
       setLocationLoading(true);
       setLocationError("");
       try {
         const [lng, lat] = await getCoordinatesByName(profile.location);
-        if (isMounted) {
-          setLocationCoords({ lat, lng });
-        }
-      } catch (locationErr) {
-        console.error("Error resolving location", locationErr);
+        if (isMounted) setLocationCoords({ lat, lng });
+      } catch {
         if (isMounted) {
           setLocationCoords(null);
-          setLocationError(
-            "Unable to determine your location. Please update it."
-          );
+          setLocationError("Unable to determine your location. Please update it.");
         }
       } finally {
-        if (isMounted) {
-          setLocationLoading(false);
-        }
+        if (isMounted) setLocationLoading(false);
       }
     };
-
-    const loadCityPois = async () => {
-      if (!cityName) {
-        setCityPois([]);
-        return;
-      }
-      setCityPoisLoading(true);
-      try {
-        const { ok, data } = await fetchPoisByCityName(cityName);
-        if (isMounted) {
-          if (ok && Array.isArray(data?.pois)) {
-            setCityPois(data.pois);
-          } else {
-            setCityPois([]);
-          }
-        }
-      } catch (cityError) {
-        console.error("Error loading city POIs", cityError);
-        if (isMounted) setCityPois([]);
-      } finally {
-        if (isMounted) setCityPoisLoading(false);
-      }
-    };
-
-    loadLocationData();
-    loadCityPois();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [profile, cityName]);
+    loadLocation();
+    return () => { isMounted = false; };
+  }, [profile?.location]);
 
   const handleLocationSave = async (value, reportError) => {
     const token = sessionStorage.getItem("token");
@@ -348,23 +242,15 @@ const MyProfile = () => {
         reportError?.(data?.message || "Unable to update location.");
         return;
       }
-      if (data?.user) {
-        setProfile(data.user);
-      } else {
-        setProfile((prev) => (prev ? { ...prev, location: value } : prev));
-      }
-      setLocationModalOpen(false);
-    } catch (updateError) {
-      console.error("Error updating location", updateError);
-      reportError?.(
-        "An unexpected error occurred while updating your location."
-      );
+      setProfile((prev) => data?.user || { ...prev, location: value });
+    } catch {
+      reportError?.("Unexpected error while updating location.");
     } finally {
       setUpdatingLocation(false);
     }
   };
 
-  if (loading) {
+  if (loading)
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
         <div className="spinner-border text-primary" role="status">
@@ -372,51 +258,31 @@ const MyProfile = () => {
         </div>
       </div>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
       <div className="container py-5">
-        <div className="alert alert-danger" role="alert">
-          {error}
-        </div>
+        <div className="alert alert-danger">{error}</div>
       </div>
     );
-  }
 
   return (
     <div className="d-flex flex-column flex-lg-row">
       {/* Sidebar */}
-      <div
-        className="d-flex flex-column p-3 bg-light"
-        style={{ width: "250px", minHeight: "100vh" }}
-      >
-        {/* User Info */}
+      <div className="d-flex flex-column p-3 bg-light" style={{ width: "250px", minHeight: "100vh" }}>
         <div className="mb-4 d-flex justify-content-between align-items-center">
           <div>
             <strong>{profile?.name}</strong>
             <br />
             {profile?.user_name && <small>@{profile.user_name}</small>}
-            {profile?.location && (
-              <div className="text-muted small">{profile.location}</div>
-            )}
+            {profile?.location && <div className="text-muted small">{profile.location}</div>}
           </div>
-          <i
-            className="bi bi-pencil-square"
-            role="button"
-            data-bs-toggle="modal"
-            data-bs-target="#userModal"
-          ></i>
+          <i className="bi bi-pencil-square" role="button" data-bs-toggle="modal" data-bs-target="#userModal"></i>
         </div>
 
-        {/* Past Trips */}
         <div className="flex-grow-1">
           <h6>Visited Places</h6>
-          {visitedLoading ? (
-            <div className="d-flex justify-content-center py-3">
-              <div className="spinner-border text-primary spinner-border-sm" />
-            </div>
-          ) : visitedPois.length > 0 ? (
+          {visitedPois.length > 0 ? (
             visitedPois.map((poi) => (
               <PastTripCard
                 key={poi.id}
@@ -432,7 +298,6 @@ const MyProfile = () => {
           )}
         </div>
 
-        {/* Logout */}
         <button className="btn btn-outline-danger mt-auto" onClick={handleLogout}>
           Logout
         </button>
@@ -441,23 +306,15 @@ const MyProfile = () => {
       {/* Main Content */}
       <div className="flex-grow-1 p-4">
         <h1>Hello, {firstName}!</h1>
-        <p className="text-muted">
-          Here is a snapshot of your activity and saved locations.
-        </p>
+        <p className="text-muted">Here is a snapshot of your activity and saved locations.</p>
 
         <div className="row g-3 mb-4">
           <div className="col-md-6 col-lg-4">
             <div className="card shadow-sm h-100">
               <div className="card-body">
                 <h5 className="card-title">Contact</h5>
-                <p className="card-text mb-1">
-                  <strong>Email:</strong> {profile?.email}
-                </p>
-                {profile?.location && (
-                  <p className="card-text mb-0">
-                    <strong>Location:</strong> {profile.location}
-                  </p>
-                )}
+                <p className="card-text mb-1"><strong>Email:</strong> {profile?.email}</p>
+                {profile?.location && <p className="card-text mb-0"><strong>Location:</strong> {profile.location}</p>}
               </div>
             </div>
           </div>
@@ -465,7 +322,7 @@ const MyProfile = () => {
             <div className="card shadow-sm h-100">
               <div className="card-body">
                 <h5 className="card-title">Favorites</h5>
-                 <p className="display-6 mb-0">{favoriteIds.length}</p>
+                <p className="display-6 mb-0">{favoriteIds.length}</p>
                 <small className="text-muted">Saved points of interest</small>
               </div>
             </div>
@@ -484,22 +341,10 @@ const MyProfile = () => {
         <div className="row g-3 align-items-stretch my-4">
           <div className="col-12 col-lg-4">
             <PoiCarousel
-              pois={cityPois}
-              title={
-                profile?.location
-                  ? `POIs in ${cityName || profile.location}`
-                  : "Near me"
-              }
-              onSelect={(poi) => navigate(`/details/${poi.id}`)}
-              emptyMessage={
-                cityPoisLoading ? (
-                  <div className="py-4">{renderSectionSpinner("80px")}</div>
-                ) : profile?.location ? (
-                  "No points of interest found for your city yet."
-                ) : (
-                  "Set your location to discover nearby points of interest."
-                )
-              }
+              pois={[]}
+              title={profile?.location ? `POIs in ${cityName || profile.location}` : "Near me"}
+              onSelect={() => {}}
+              emptyMessage="No POIs"
             />
           </div>
           <div className="col-12 col-lg-8">
@@ -507,17 +352,13 @@ const MyProfile = () => {
               <div className="card-header d-flex justify-content-between align-items-center">
                 <div>
                   <h5 className="mb-0">My location</h5>
-                  {profile?.location && (
-                    <small className="text-muted">{profile.location}</small>
-                  )}
+                  {profile?.location && <small className="text-muted">{profile.location}</small>}
                 </div>
                 <button
                   type="button"
                   className="btn btn-outline-primary btn-sm"
-                  onClick={() => {
-                    setLocationError("");
-                    setLocationModalOpen(true);
-                  }}
+                  data-bs-toggle="modal"
+                  data-bs-target="#locationModal"
                 >
                   Update location
                 </button>
@@ -526,20 +367,14 @@ const MyProfile = () => {
                 {locationLoading ? (
                   renderSectionSpinner("320px")
                 ) : locationCoords ? (
-                  <MapComponent
-                    lat={locationCoords.lat}
-                    long={locationCoords.lng}
-                    zoom={12}
-                  />
+                  <MapComponent lat={locationCoords.lat} long={locationCoords.lng} zoom={12} />
                 ) : (
                   <div className="w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-light text-muted fw-semibold">
                     Location needed
                   </div>
                 )}
               </div>
-              {locationError && (
-                <div className="card-footer text-danger small">{locationError}</div>
-              )}
+              {locationError && <div className="card-footer text-danger small">{locationError}</div>}
             </div>
           </div>
         </div>
@@ -548,9 +383,7 @@ const MyProfile = () => {
         <div className="row">
           <div className="col-12 col-lg-8 mb-4 mb-lg-0">
             <h3>My Favorites</h3>
-            {favoritesLoading ? (
-              renderSectionSpinner("160px")
-            ) : favoritePois.length > 0 ? (
+            {favoritePois.length > 0 ? (
               favoritePois.map((poi) => (
                 <FavoriteCard
                   key={poi.id}
@@ -562,17 +395,12 @@ const MyProfile = () => {
                 />
               ))
             ) : (
-              <div className="alert alert-info mb-0" role="alert">
-                You haven't added any favorites yet. Start exploring to save
-                places you love!
-              </div>
+              <div className="alert alert-info mb-0">No favorites yet.</div>
             )}
           </div>
           <div className="col-12 col-lg-4">
-            <h3>Recomendation</h3>
-            {suggestionLoading ? (
-              renderSectionSpinner("160px")
-            ) : suggestedPoi ? (
+            <h3>Recommendation</h3>
+            {suggestedPoi ? (
               <RecommendationCard
                 name={suggestedPoi.name}
                 description={suggestedPoi.description}
@@ -581,21 +409,18 @@ const MyProfile = () => {
                 onViewDetails={() => navigate(`/details/${suggestedPoi.id}`)}
               />
             ) : (
-              <div className="alert alert-secondary mb-0" role="alert">
-                Save your first favorite or visit a location to receive
-                personalized suggestions.
+              <div className="alert alert-secondary mb-0">
+                Save your first favorite or visit a location to receive suggestions.
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Modal */}
-      <UserModal user={profile} />
+      {/* Modals */}
+      <UserModal user={profile} onUpdate={setProfile} />
       <LocationModal
-        show={locationModalOpen}
-        initialValue={profile?.location || ""}
-        onClose={() => setLocationModalOpen(false)}
+        userLocation={profile?.location || ""}
         onSave={handleLocationSave}
         loading={updatingLocation}
       />

@@ -1,17 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const LocationModal = ({ show, initialValue = "", onClose, onSave, loading }) => {
-  const [value, setValue] = useState(initialValue);
+const LocationModal = ({ userLocation = "", onSave, loading }) => {
+  const [value, setValue] = useState(userLocation);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (show) {
-      setValue(initialValue || "");
-      setError("");
-    }
-  }, [show, initialValue]);
-
-  if (!show) return null;
+    setValue(userLocation || "");
+    setError("");
+  }, [userLocation]);
 
   const handleSave = () => {
     if (!value.trim()) {
@@ -22,25 +18,16 @@ const LocationModal = ({ show, initialValue = "", onClose, onSave, loading }) =>
   };
 
   return (
-    <div className="modal fade show d-block" tabIndex="-1" role="dialog">
-      <div
-        className="modal-backdrop fade show"
-        onClick={loading ? undefined : onClose}
-      />
+    <div className="modal fade" id="locationModal" tabIndex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
       <div className="modal-dialog">
         <div className="modal-content">
           <div className="modal-header">
-            <h5 className="modal-title">Update location</h5>
-            <button
-              type="button"
-              className="btn-close"
-              onClick={loading ? undefined : onClose}
-            ></button>
+            <h5 className="modal-title" id="locationModalLabel">Update Location</h5>
+            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" disabled={loading}></button>
           </div>
           <div className="modal-body">
             <p className="small text-muted">
-              Provide a location that MapTiler can understand. Try using the
-              format "City, Country".
+              Provide a location that MapTiler can understand. Try using the format "City, Country".
             </p>
             <input
               type="text"
@@ -53,20 +40,8 @@ const LocationModal = ({ show, initialValue = "", onClose, onSave, loading }) =>
             {error && <div className="text-danger small mt-2">{error}</div>}
           </div>
           <div className="modal-footer">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={loading ? undefined : onClose}
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleSave}
-              disabled={loading}
-            >
+            <button type="button" className="btn btn-secondary" data-bs-dismiss="modal" disabled={loading}>Cancel</button>
+            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={loading}>
               {loading ? "Saving..." : "Save"}
             </button>
           </div>
