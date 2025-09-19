@@ -6,7 +6,7 @@ import { SearchPage } from "../components/SearchPage.jsx";
 export const LocationList = () => {
 
 	return (
-		<div className="container-fluid">
+		<div className="container-fluid" style={{ minHeight: "85vh"}}>
 			<LocationListBanner/>
 			<SearchPage/>
 		</div>
