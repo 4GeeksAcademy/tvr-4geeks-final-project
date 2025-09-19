@@ -35,7 +35,7 @@ const MyProfile = () => {
 
   useEffect(() => {
     const loadProfile = async () => {
-      const token = sessionStorage.getItem("token");
+      const token = localStorage.getItem("token");
       if (!token) {
         setError("You need to log in to access your profile.");
         setLoading(false);
@@ -72,7 +72,7 @@ const MyProfile = () => {
   }, [profile?.name]);
 
   const handleLogout = () => {
-    sessionStorage.removeItem("token");
+    localStorage.removeItem("token");
     window.dispatchEvent(new Event("loginChange"));
     navigate("/login-register");
   };
@@ -229,7 +229,7 @@ const MyProfile = () => {
   }, [profile?.location]);
 
   const handleLocationSave = async (value, reportError) => {
-    const token = sessionStorage.getItem("token");
+    const token = localStorage.getItem("token");
     if (!token) {
       reportError?.("You need to log in again to update your location.");
       return;

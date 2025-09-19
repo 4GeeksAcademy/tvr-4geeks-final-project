@@ -29,7 +29,7 @@ export default function LoginForm({ setApiError }) {
                 setApiError("❌ " + (data && data.message ? data.message : "Request error"));
                 return;
             }
-            sessionStorage.setItem("token", data.access_token);
+            localStorage.setItem("token", data.access_token);
             window.dispatchEvent(new Event("loginChange"));
             navigate("/myProfile");
         } catch (err) {

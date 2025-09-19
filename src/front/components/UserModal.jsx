@@ -31,7 +31,7 @@ const UserModal = ({ user, onUpdate }) => {
   const handleSave = async () => {
     setLoading(true);
     setError("");
-    const token = sessionStorage.getItem("token");
+    const token = localStorage.getItem("token");
     if (!token) {
       setError("You need to log in again.");
       setLoading(false);
