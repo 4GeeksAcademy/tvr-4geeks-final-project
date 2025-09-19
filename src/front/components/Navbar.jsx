@@ -13,15 +13,15 @@ export const Navbar = () => {
 
     
     const handleBeforeUnload = () => {
-      localstorage.setItem("isReloading", "true");
+      localStorage.setItem("isReloading", "true");
     };
 
     
     const handleLoad = () => {
-      const reloading = localstorage.getItem("isReloading");
+      const reloading = localStorage.getItem("isReloading");
       if (reloading) {
         
-        localstorage.removeItem("isReloading");
+        localStorage.removeItem("isReloading");
       } else {
         
         localStorage.removeItem("token");

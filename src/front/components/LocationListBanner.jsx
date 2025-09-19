@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-
+import jumbotronImage from "../assets/img/woman.jpg";
 export const LocationListBanner = () => {
   const navigate = useNavigate();
 
@@ -7,7 +7,7 @@ export const LocationListBanner = () => {
     <section
       className="position-relative overflow-hidden rounded-4 shadow-lg d-flex justify-content-center align-items-center text-white text-center"
       style={{
-        backgroundImage: `url("src/front/assets/img/Image-Woman-enjoying-a-Caribbean (1).jpg")`,
+        backgroundImage: `url(${jumbotronImage})`,
         backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center",
