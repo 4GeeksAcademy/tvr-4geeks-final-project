@@ -88,7 +88,7 @@ const MyProfile = () => {
     </div>
   );
 
-  // Carga favoritos
+  // Favorites
   const loadFavoritePois = useCallback(async (ids = []) => {
     if (!Array.isArray(ids) || ids.length === 0) {
       setFavoritePois([]);
@@ -111,7 +111,7 @@ const MyProfile = () => {
     }
   }, []);
 
-  // Carga visitados
+  // Visited
   const loadVisitedPois = useCallback(async (ids = []) => {
     if (!Array.isArray(ids) || ids.length === 0) {
       setVisitedPois([]);
@@ -153,7 +153,7 @@ const MyProfile = () => {
           if (ok && Array.isArray(data?.countries)) {
             data.countries.forEach((c) => countriesMap.set(c.id, c));
           }
-        } catch {}
+        } catch { }
         countriesCacheRef.current = countriesMap;
       }
 
@@ -169,7 +169,7 @@ const MyProfile = () => {
     }
   }, []);
 
-  // Carga recomendación
+  // Recommendation
   const loadSuggestion = useCallback(
     async (favoriteList = [], visitedList = []) => {
       try {
@@ -199,7 +199,7 @@ const MyProfile = () => {
     loadSuggestion(favoriteIds, visitedIds);
   }, [profile, favoriteIds, visitedIds, loadFavoritePois, loadVisitedPois, loadSuggestion]);
 
-  // Carga coordenadas de ubicación
+  //  Location
   useEffect(() => {
     if (!profile?.location) {
       setLocationCoords(null);
@@ -252,7 +252,7 @@ const MyProfile = () => {
 
   if (loading)
     return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
+      <div className="d-flex flex-column justify-content-center align-items-center" style={{ minHeight: "85vh" }}>
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
@@ -267,7 +267,7 @@ const MyProfile = () => {
     );
 
   return (
-    <div className="d-flex flex-column flex-lg-row">
+    <div className="d-flex flex-row flex-nowrap w-100">
       {/* Sidebar */}
       <div className="d-flex flex-column p-3 bg-light" style={{ width: "250px", minHeight: "100vh" }}>
         <div className="mb-4 d-flex justify-content-between align-items-center">
@@ -279,7 +279,9 @@ const MyProfile = () => {
           </div>
           <i className="bi bi-pencil-square" role="button" data-bs-toggle="modal" data-bs-target="#userModal"></i>
         </div>
-
+        <button className="btn btn-outline-danger mt-auto mb-4" onClick={handleLogout}>
+          Logout
+        </button>
         <div className="flex-grow-1">
           <h6>Visited Places</h6>
           {visitedPois.length > 0 ? (
@@ -297,14 +299,10 @@ const MyProfile = () => {
             <p className="text-muted small">You haven't marked any visits yet.</p>
           )}
         </div>
-
-        <button className="btn btn-outline-danger mt-auto" onClick={handleLogout}>
-          Logout
-        </button>
       </div>
 
       {/* Main Content */}
-      <div className="flex-grow-1 p-4">
+      <div className="flex-grow-1 p-4" style={{ minWidth: "320px" }}>
         <h1>Hello, {firstName}!</h1>
         <p className="text-muted">Here is a snapshot of your activity and saved locations.</p>
 
@@ -341,11 +339,11 @@ const MyProfile = () => {
         <div className="row g-3 align-items-stretch my-4">
           <div className="col-12 col-lg-4">
             <PoiCarousel
-              cityName={cityName} 
+              cityName={cityName}
               title={profile?.location ? `POIs in ${cityName}` : "Near me"}
               onSelect={(poi) => navigate(`/details/${poi.id}`)}
               emptyMessage="No POIs"
-          />
+            />
           </div>
           <div className="col-12 col-lg-8">
             <div className="card shadow-sm h-100">
@@ -398,16 +396,18 @@ const MyProfile = () => {
               <div className="alert alert-info mb-0">No favorites yet.</div>
             )}
           </div>
-          <div className="col-12 col-lg-4">
+          <div className="col-12 col-lg-4 d-flex flex-column align-items-stretch">
             <h3>Recommendation</h3>
             {suggestedPoi ? (
-              <RecommendationCard
-                name={suggestedPoi.name}
-                description={suggestedPoi.description}
-                tags={suggestedPoi.tags}
-                image={suggestedPoi.images?.[0]}
-                onViewDetails={() => navigate(`/details/${suggestedPoi.id}`)}
-              />
+              <div>
+                <RecommendationCard
+                  name={suggestedPoi.name}
+                  description={suggestedPoi.description}
+                  tags={suggestedPoi.tags}
+                  image={suggestedPoi.images?.[0]}
+                  onViewDetails={() => navigate(`/details/${suggestedPoi.id}`)}
+                />
+              </div>
             ) : (
               <div className="alert alert-secondary mb-0">
                 Save your first favorite or visit a location to receive suggestions.

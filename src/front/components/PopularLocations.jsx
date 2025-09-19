@@ -46,7 +46,7 @@ export const PopularLocations = () => {
 
   if (loading) {
     return (
-      <div className="text-center py-5">
+      <div className="text-center py-5" style={{ minHeight: "32vh" }}>
         <p>Loading popular destinations...</p>
       </div>
     );
