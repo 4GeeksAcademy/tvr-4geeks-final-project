@@ -10,24 +10,24 @@ const RecommendationCard = ({
 }) => {
   const previewDescription = useMemo(() => {
     if (!description) return "";
-    const limit = 160;
+    const limit = 80;
     return description.length > limit
       ? `${description.slice(0, limit)}...`
       : description;
   }, [description]);
 
   return (
-      <div className="card mb-3 shadow-sm h-100">
+      <div className="card mb-3 shadow-sm h-100 w-75">
       <PoiImage
         src={image}
         alt={name}
         width="100%"
-        height="180px"
+        height="200px"
         className="card-img-top"
       />
 
       <div className="card-body d-flex flex-column">
-        <div className="d-flex justify-content-between align-items-center mb-2">
+        <div className="d-flex justify-content-between align-items-center mb-1">
           <h6 className="card-title mb-0">{name}</h6>
           {onViewDetails && (
             <button
@@ -41,10 +41,10 @@ const RecommendationCard = ({
         </div>
 
         {previewDescription && (
-          <p className="card-text text-muted flex-grow-1">{previewDescription}</p>
+          <p className="card-text text-muted">{previewDescription}</p>
         )}
 
-        <div className="d-flex flex-wrap gap-1 mt-2">
+        <div className="d-flex flex-wrap gap-1">
           {Array.isArray(tags) && tags.length > 0 ? (
             tags.map((tag, idx) => (
               <span key={`${tag}-${idx}`} className="badge bg-info text-dark">

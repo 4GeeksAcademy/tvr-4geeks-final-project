@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -6,13 +5,38 @@ export const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const checkLogin = () => setIsLoggedIn(!!sessionStorage.getItem("token"));
+    const checkLogin = () => setIsLoggedIn(!!localStorage.getItem("token"));
     checkLogin();
+
     window.addEventListener("storage", checkLogin);
     window.addEventListener("loginChange", checkLogin);
+
+    
+    const handleBeforeUnload = () => {
+      localstorage.setItem("isReloading", "true");
+    };
+
+    
+    const handleLoad = () => {
+      const reloading = localstorage.getItem("isReloading");
+      if (reloading) {
+        
+        localstorage.removeItem("isReloading");
+      } else {
+        
+        localStorage.removeItem("token");
+        setIsLoggedIn(false);
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("load", handleLoad);
+
     return () => {
       window.removeEventListener("storage", checkLogin);
       window.removeEventListener("loginChange", checkLogin);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("load", handleLoad);
     };
   }, []);
 
@@ -60,10 +84,7 @@ export const Navbar = () => {
             </li>
             <li className="nav-item ms-lg-3">
               {isLoggedIn ? (
-                <Link
-                  to="/myProfile"
-                  className="nav-link fw-semibold"
-                >
+                <Link to="/myProfile" className="nav-link fw-semibold">
                   My Profile
                 </Link>
               ) : (
