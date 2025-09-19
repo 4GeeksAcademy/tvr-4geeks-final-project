@@ -341,11 +341,11 @@ const MyProfile = () => {
         <div className="row g-3 align-items-stretch my-4">
           <div className="col-12 col-lg-4">
             <PoiCarousel
-              pois={[]}
-              title={profile?.location ? `POIs in ${cityName || profile.location}` : "Near me"}
-              onSelect={() => {}}
+              cityName={cityName} 
+              title={profile?.location ? `POIs in ${cityName}` : "Near me"}
+              onSelect={(poi) => navigate(`/details/${poi.id}`)}
               emptyMessage="No POIs"
-            />
+          />
           </div>
           <div className="col-12 col-lg-8">
             <div className="card shadow-sm h-100">

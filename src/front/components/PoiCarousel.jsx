@@ -1,33 +1,65 @@
-import React, { isValidElement, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import PoiImage from "./PoiImage";
+import { fetchPoisByCityName } from "../apicalls/profileApicalls";
 
 const PoiCarousel = ({
-  pois = [],
+  cityName = "",
   title = "Points of interest",
   onSelect,
   emptyMessage = "No points of interest found.",
 }) => {
+  const [pois, setPois] = useState([]);
   const [index, setIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch de POIs cuando cambia la ciudad
   useEffect(() => {
-    setIndex(0);
-  }, [pois]);
+  if (!cityName) {
+    setPois([]);
+    setLoading(false);
+    return;
+  }
 
+  const getPois = async () => {
+    setLoading(true);
+    try {
+      const { ok, data } = await fetchPoisByCityName(cityName);
+      if (ok && Array.isArray(data?.pois)) {
+        setPois(data.pois); 
+      } else {
+        console.error("Error al obtener POIs:", data);
+        setPois([]);
+      }
+    } catch (err) {
+      console.error("Error al llamar a la API:", err);
+      setPois([]);
+    } finally {
+      setLoading(false);
+      setIndex(0);
+    }
+  };
+
+  getPois();
+}, [cityName]);
+
+
+  // POI actual
   const current = useMemo(() => {
     if (!Array.isArray(pois) || pois.length === 0) return null;
     return pois[index] ?? pois[0];
   }, [pois, index]);
 
+  // Navegación
   const handlePrev = () => {
     if (!pois.length) return;
     setIndex((prev) => (prev === 0 ? pois.length - 1 : prev - 1));
   };
-
   const handleNext = () => {
     if (!pois.length) return;
     setIndex((prev) => (prev === pois.length - 1 ? 0 : prev + 1));
   };
 
+  // Descripción truncada
   const truncatedDescription = useMemo(() => {
     if (!current?.description) return "";
     const limit = 140;
@@ -59,8 +91,11 @@ const PoiCarousel = ({
           </button>
         </div>
       </div>
+
       <div className="card-body d-flex flex-column">
-        {current ? (
+        {loading ? (
+          <p>Cargando POIs...</p>
+        ) : current ? (
           <>
             <PoiImage
               src={current.images?.[0]}
@@ -94,13 +129,12 @@ const PoiCarousel = ({
               </button>
             )}
           </>
-        ) : isValidElement(emptyMessage) ? (
-          <div className="my-auto w-100">{emptyMessage}</div>
         ) : (
           <div className="text-muted text-center my-auto">{emptyMessage}</div>
         )}
       </div>
-      {pois.length > 1 && (
+
+      {pois.length > 1 && !loading && (
         <div className="card-footer text-center small text-muted">
           {index + 1} / {pois.length}
         </div>
