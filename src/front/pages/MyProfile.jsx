@@ -35,7 +35,7 @@ const MyProfile = () => {
 
   useEffect(() => {
     const loadProfile = async () => {
-      const token = sessionStorage.getItem("token");
+      const token = localStorage.getItem("token");
       if (!token) {
         setError("You need to log in to access your profile.");
         setLoading(false);
@@ -72,7 +72,7 @@ const MyProfile = () => {
   }, [profile?.name]);
 
   const handleLogout = () => {
-    sessionStorage.removeItem("token");
+    localStorage.removeItem("token");
     window.dispatchEvent(new Event("loginChange"));
     navigate("/login-register");
   };
@@ -229,7 +229,7 @@ const MyProfile = () => {
   }, [profile?.location]);
 
   const handleLocationSave = async (value, reportError) => {
-    const token = sessionStorage.getItem("token");
+    const token = localStorage.getItem("token");
     if (!token) {
       reportError?.("You need to log in again to update your location.");
       return;
@@ -341,11 +341,11 @@ const MyProfile = () => {
         <div className="row g-3 align-items-stretch my-4">
           <div className="col-12 col-lg-4">
             <PoiCarousel
-              pois={[]}
-              title={profile?.location ? `POIs in ${cityName || profile.location}` : "Near me"}
-              onSelect={() => {}}
+              cityName={cityName} 
+              title={profile?.location ? `POIs in ${cityName}` : "Near me"}
+              onSelect={(poi) => navigate(`/details/${poi.id}`)}
               emptyMessage="No POIs"
-            />
+          />
           </div>
           <div className="col-12 col-lg-8">
             <div className="card shadow-sm h-100">

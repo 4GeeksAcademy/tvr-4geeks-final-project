@@ -41,7 +41,7 @@ export const DetailsView = () => {
     }, [loading]);
 
     useEffect(() => {
-        const token = sessionStorage.getItem("token");
+        const token = localStorage.getItem("token");
         console.log("Token:", token);
         setIsLoggedIn(!!token);
         if (token && Id) {
@@ -57,7 +57,7 @@ export const DetailsView = () => {
         }
     }, [Id]);
     const handleVisited = async () => {
-        const token = sessionStorage.getItem("token");
+        const token = localStorage.getItem("token");
         if (!token) return;
         try {
             if (isVisit) {
@@ -73,7 +73,7 @@ export const DetailsView = () => {
     };
 
     const handleFavorite = async () => {
-        const token = sessionStorage.getItem("token");
+        const token = localStorage.getItem("token");
         if (!token) return;
         try {
             if (isFav) {

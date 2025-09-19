@@ -57,7 +57,7 @@ export function AboutUs() {
                     },
                     {
                         name: "Vicente Vetrano",
-                        linkedin: null,
+                        linkedin: "https://www.linkedin.com/in/vicente-vetrano-a21381266",
                         github: "https://github.com/VicenteVD"
                     },
                     {
