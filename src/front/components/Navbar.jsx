@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-
+import logoNav from "../assets/img/logo-nav.png";
 export const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -46,7 +46,7 @@ export const Navbar = () => {
         {/* Logo */}
         <Link to="/" className="navbar-brand fw-bold fs-4 d-flex align-items-center">
           <img
-            src="src/front/assets/img/logo-nav.png"
+            src={logoNav}
             alt="Logo"
             style={{ height: "80px", marginRight: "10px" }}
           />
