@@ -96,9 +96,9 @@ export const DetailsView = () => {
     </div>;
 
     return (
-        <div className="container-fluid d-flex flex-grow-1 p-0">
+        <div className="container-fluid d-flex flex-column flex-lg-row flex-grow-1 p-0 detailsview-responsive">
             {/* Left column */}
-            <div className="d-flex flex-column px-4 pt-4" style={{ minHeight: 0, width: '65%' }}>
+            <div className="d-flex flex-column px-4 pt-4 left-col-responsive">
                 <div className="d-flex flex-column w-100 h-75" style={{ maxHeight: "600px" }}>
                     <PoiImagesCarousel poiId={Id} />
                 </div>
@@ -108,8 +108,7 @@ export const DetailsView = () => {
                 </div>
             </div>
             {/* Right column */}
-            <div className="d-flex flex-column bg-light border-start pe-4" style={{ minHeight: 0, width: '35%' }}>
-                {/* Info, weather and favorites */}
+            <div className="d-flex flex-column bg-light border-start pe-4 right-col-responsive">
                 <div className=" d-flex flex-column justify-content-between p-3">
                     <h1 className="h4 mb-3 align-self-center">{poi.name}</h1>
                     <div className="mb-3">
@@ -119,13 +118,13 @@ export const DetailsView = () => {
                         <div className="d-flex gap-2">
                             <button
                                 onClick={handleFavorite}
-                                className={`btn ${isFav ? "btn-danger" : "btn-primary"} flex-fill`}
+                                className={`btn flex-fill ${isFav ? "btn-remove-fav" : "btn-add-fav"}`}
                             >
                                 {isFav ? "Remove from favorites" : "Add to favorites"}
                             </button>
                             <button
                                 onClick={handleVisited}
-                                className={`btn ${isVisit ? "btn-success" : "btn-outline-success"} flex-fill`}
+                                className={`btn flex-fill ${isVisit ? "btn-remove-visit" : "btn-add-visit"}`}
                             >
                                 {isVisit ? "Remove from visited" : "Mark as visited"}
                             </button>
@@ -133,7 +132,7 @@ export const DetailsView = () => {
                     )}
                 </div>
                 {/* Map */}
-                <div className="h-50 p-3">
+                <div className="map-responsive p-3">
                     <MapComponent lat={poi.latitude} long={poi.longitude} />
                 </div>
                 {/* Tags */}
@@ -149,6 +148,94 @@ export const DetailsView = () => {
                     ))}
                 </div>
             </div>
+            {/* Responsive columns CSS */}
+            <style>{`
+            /* Outline style for action buttons */
+            .btn-add-fav {
+                color: #E6A800 !important;
+                border: 2px solid #E6A800 !important;
+                background: transparent !important;
+                transition: background 0.2s, color 0.2s;
+            }
+            .btn-add-fav:hover, .btn-add-fav:focus {
+                background: #E6A800 !important;
+                color: #222 !important;
+            }
+            .btn-remove-fav {
+                color: #FF595E !important;
+                border: 2px solid #FF595E !important;
+                background: transparent !important;
+                transition: background 0.2s, color 0.2s;
+            }
+            .btn-remove-fav:hover, .btn-remove-fav:focus {
+                background: #FF595E !important;
+                color: #fff !important;
+            }
+            .btn-add-visit {
+                color: #079CB4 !important;
+                border: 2px solid #079CB4 !important;
+                background: transparent !important;
+                transition: background 0.2s, color 0.2s;
+            }
+            .btn-add-visit:hover, .btn-add-visit:focus {
+                background: #079CB4 !important;
+                color: #fff !important;
+            }
+            .btn-remove-visit {
+                color: #005B7F !important;
+                border: 2px solid #005B7F !important;
+                background: transparent !important;
+                transition: background 0.2s, color 0.2s;
+            }
+            .btn-remove-visit:hover, .btn-remove-visit:focus {
+                background: #005B7F !important;
+                color: #fff !important;
+            }
+            @media (max-width: 991.98px) {
+                .detailsview-responsive {
+                    flex-direction: column !important;
+                }
+                .left-col-responsive, .right-col-responsive {
+                    width: 100% !important;
+                }
+                .right-col-responsive {
+                    border-left: none !important;
+                    border-top: 1px solid #dee2e6 !important;
+                    padding-left: 1rem !important;
+                }
+                .map-responsive {
+                    height: 250px !important;
+                    min-height: 180px !important;
+                    max-height: 350px !important;
+                }
+                .map-responsive > * {
+                    height: 100% !important;
+                    min-height: 180px !important;
+                }
+            }
+            @media (min-width: 992px) {
+                .detailsview-responsive {
+                    flex-direction: row !important;
+                }
+                .left-col-responsive {
+                    width: 65% !important;
+                }
+                .right-col-responsive {
+                    width: 35% !important;
+                    border-left: 1px solid #dee2e6 !important;
+                    border-top: none !important;
+                    padding-left: 0 !important;
+                }
+                .map-responsive {
+                    height: 300px !important;
+                    min-height: 200px !important;
+                }
+                .map-responsive > * {
+                    height: 100% !important;
+                    min-height: 200px !important;
+                }
+            }
+            `}</style>
         </div>
     );
 };

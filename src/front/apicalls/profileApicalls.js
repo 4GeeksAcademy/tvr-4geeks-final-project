@@ -1,3 +1,4 @@
+import { handleUnauthorized } from "../utils/auth";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const parseJson = async (resp) => {
@@ -18,6 +19,8 @@ export const fetchMyProfile = async (token) => {
     },
   });
 
+  // If unauthorized, clear token and notify app
+  handleUnauthorized(resp);
   return { ok: resp.ok, data: await parseJson(resp) };
 };
 
@@ -32,21 +35,25 @@ export const updateMyProfile = async (token, payload) => {
     body: JSON.stringify(payload),
   });
 
+  handleUnauthorized(resp);
   return { ok: resp.ok, data: await parseJson(resp) };
 };
 
 export const fetchPoi = async (poiId) => {
   const resp = await fetch(`${BACKEND_URL}/api/pois/${poiId}`);
+  handleUnauthorized(resp);
   return { ok: resp.ok, data: await parseJson(resp) };
 };
 
 export const fetchCity = async (cityId) => {
   const resp = await fetch(`${BACKEND_URL}/api/cities/${cityId}`);
+  handleUnauthorized(resp);
   return { ok: resp.ok, data: await parseJson(resp) };
 };
 
 export const fetchCountries = async () => {
   const resp = await fetch(`${BACKEND_URL}/api/countries`);
+  handleUnauthorized(resp);
   return { ok: resp.ok, data: await parseJson(resp) };
 };
 
@@ -56,10 +63,12 @@ export const fetchPoisByCityName = async (cityName) => {
     url.searchParams.set("city_name", cityName);
   }
   const resp = await fetch(url);
+  handleUnauthorized(resp);
   return { ok: resp.ok, data: await parseJson(resp) };
 };
 
 export const fetchAllPois = async () => {
   const resp = await fetch(`${BACKEND_URL}/api/pois`);
+  handleUnauthorized(resp);
   return { ok: resp.ok, data: await parseJson(resp) };
 };

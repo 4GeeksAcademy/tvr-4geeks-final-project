@@ -53,17 +53,20 @@ export function AboutUs() {
                     {
                         name: "Tito González",
                         linkedin: "https://www.linkedin.com/in/tito-julio-gonzalez-padial-7b7292330",
-                        github: "https://github.com/tgp034"
+                        github: "https://github.com/tgp034",
+                        despcription: ""
                     },
                     {
                         name: "Vicente Vetrano",
                         linkedin: "https://www.linkedin.com/in/vicente-vetrano-a21381266",
-                        github: "https://github.com/VicenteVD"
+                        github: "https://github.com/VicenteVD",
+                        despcription: ""
                     },
                     {
                         name: "Raphael Kunstmann",
                         linkedin: null,
-                        github: "https://github.com/ThatRapho"
+                        github: "https://github.com/ThatRapho",
+                        despcription: ""
                     }
                 ].map((dev, i) => (
                     <div className="col-md-4" key={dev.name}>
@@ -75,7 +78,7 @@ export function AboutUs() {
                                 <h6 className="fw-bold mb-1">{dev.name}</h6>
                                 <p className="text-muted small mb-2">Full Stack Developer</p>
                                 <p className="small flex-grow-1 text-muted">
-                                    Focused on building scalable and user-friendly solutions.
+                                    {dev.despcription}
                                 </p>
                                 <div className="d-flex justify-content-center gap-2">
                                     {dev.linkedin && (

@@ -7,7 +7,7 @@ import { Footer } from "../components/Footer"
 export const Layout = () => {
     return (
         <ScrollToTop>
-            <div className="d-flex flex-column min-vh-100">
+            <div className="d-flex flex-column min-vh-100 w-100">
                 <Navbar />
                     <Outlet />
                 <Footer />
