@@ -6,7 +6,7 @@ import { PopularLocations } from "../components/PopularLocations"
 export const Home = () => {
 
 	return (
-		<div className="container-fluid">
+		<div className="container-fluid p-0">
 			<HomeJumbotron/>
 			<PopularLocations/>
 		</div>

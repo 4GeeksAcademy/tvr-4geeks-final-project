@@ -267,10 +267,24 @@ const MyProfile = () => {
     );
 
   return (
-    <div className="d-flex flex-row flex-nowrap w-100">
+    <div className="d-flex flex-column flex-md-row flex-nowrap w-100">
       {/* Sidebar */}
-      <div className="d-flex flex-column p-3 bg-light" style={{ width: "250px", minHeight: "100vh" }}>
-        <div className="mb-4 d-flex justify-content-between align-items-center">
+      <div className="d-flex flex-column p-3 bg-light w-100 w-md-auto flex-shrink-0 sidebar-responsive">
+        <style>{`
+        @media (max-width: 767.98px) {
+          .sidebar-responsive {
+            width: 100% !important;
+            min-height: unset !important;
+          }
+        }
+        @media (min-width: 768px) {
+          .sidebar-responsive {
+            width: 250px !important;
+            min-height: 100vh !important;
+          }
+        }
+      `}</style>
+        <div className="mb-4 d-flex justify-content-between align-items-center" style={{maxWidth: "200px"}}>
           <div>
             <strong>{profile?.name}</strong>
             <br />
@@ -279,7 +293,7 @@ const MyProfile = () => {
           </div>
           <i className="bi bi-pencil-square" role="button" data-bs-toggle="modal" data-bs-target="#userModal"></i>
         </div>
-        <button className="btn btn-outline-danger mt-auto mb-4" onClick={handleLogout}>
+        <button className="btn btn-outline-danger mt-auto mb-4" style={{maxWidth: "200px"}} onClick={handleLogout}>
           Logout
         </button>
         <div className="flex-grow-1">
