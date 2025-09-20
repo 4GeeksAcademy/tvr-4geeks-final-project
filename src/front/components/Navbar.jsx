@@ -41,14 +41,14 @@ export const Navbar = () => {
   }, []);
 
   return (
-    <nav className="navbar navbar-expand-lg bg-white shadow-sm py-3" style={{ backgroundColor: "#EDF6F9" }}>
+    <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-3">
       <div className="container">
         {/* Logo */}
         <Link to="/" className="navbar-brand fw-bold fs-4 d-flex align-items-center">
           <img
-            src=""
+            src="src/front/assets/img/logo-nav.png"
             alt="Logo"
-            style={{ height: "40px", marginRight: "10px" }}
+            style={{ height: "80px", marginRight: "10px" }}
           />
         </Link>
 
@@ -90,8 +90,7 @@ export const Navbar = () => {
               ) : (
                 <Link
                   to="/login-register"
-                  className="btn fw-semibold rounded-pill px-4 shadow-sm"
-                  style={{ backgroundColor: "#0DCAF0", color: "#000000ff" }}
+                  className="btn btn-primary fw-semibold rounded-pill px-4 shadow-sm"
                 >
                   Sign Up
                 </Link>
