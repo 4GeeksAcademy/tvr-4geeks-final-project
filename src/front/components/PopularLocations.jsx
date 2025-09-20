@@ -53,7 +53,7 @@ export const PopularLocations = () => {
   }
 
   return (
-    <section className="py-5">
+    <section className="py-5" style={{ backgroundColor: "#EDF6F9" }}>
       <div className="container text-center mb-5">
         <h2 className="fw-bold">Destinations to Inspire Adventure</h2>
         <p className="text-muted lead">
@@ -87,7 +87,7 @@ export const PopularLocations = () => {
                   <h5
                     className="fw-bold px-2 py-1 rounded-4"
                     style={{
-                      backgroundColor: "rgba(0, 0, 0, 0.49)",
+                      backgroundColor: "rgba(0,0,0,0.45)",
                       display: "inline-block",
                       maxWidth: "90%",
                     }}

@@ -1,3 +1,5 @@
+import { handleUnauthorized } from "../utils/auth";
+
 export async function isVisited(poiId, token) {
   if (!token) throw new Error("Authentication token is required");
   console.log("Checking visited for POI ID:", poiId, "with token:", token);
@@ -9,6 +11,7 @@ export async function isVisited(poiId, token) {
       Authorization: `Bearer ${token}`,
     },
   });
+  handleUnauthorized(response);
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
@@ -31,6 +34,7 @@ export async function addVisited(poiId, token) {
     },
     body: JSON.stringify({ poi_id: poiId }),
   });
+  handleUnauthorized(response);
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
@@ -48,6 +52,7 @@ export async function removeVisited(poiId, token) {
       Authorization: `Bearer ${token}`,
     },
   });
+  handleUnauthorized(response);
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
@@ -59,6 +64,7 @@ export async function getPoiImages(poiId) {
   if (!poiId) throw new Error("POI ID is required");
   const url = `${baseUrl}/api/pois/${poiId}/poiimages`;
   const response = await fetch(url);
+  handleUnauthorized(response);
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
@@ -69,6 +75,7 @@ export async function getPoiDetails(poiId) {
   if (!poiId) throw new Error("POI ID is required");
   const url = `${baseUrl}/api/pois/${poiId}`;
   const response = await fetch(url);
+  handleUnauthorized(response);
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
@@ -79,6 +86,7 @@ export async function getPoiTags(poiId) {
   if (!poiId) throw new Error("POI ID is required");
   const url = `${baseUrl}/api/pois/${poiId}/tags`;
   const response = await fetch(url);
+  handleUnauthorized(response);
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
@@ -95,6 +103,7 @@ export async function isFavorite(poiId, token) {
       Authorization: `Bearer ${token}`,
     },
   });
+  handleUnauthorized(response);
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
@@ -117,6 +126,7 @@ export async function addFavorite(poiId, token) {
     },
     body: JSON.stringify({ poi_id: poiId }),
   });
+  handleUnauthorized(response);
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
@@ -134,6 +144,7 @@ export async function removeFavorite(poiId, token) {
       Authorization: `Bearer ${token}`,
     },
   });
+  handleUnauthorized(response);
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }

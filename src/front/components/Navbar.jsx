@@ -41,7 +41,7 @@ export const Navbar = () => {
   }, []);
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-3">
+    <nav className="navbar navbar-expand-lg bg-white shadow-sm py-3" style={{ backgroundColor: "#EDF6F9" }}>
       <div className="container">
         {/* Logo */}
         <Link to="/" className="navbar-brand fw-bold fs-4 d-flex align-items-center">
@@ -90,7 +90,8 @@ export const Navbar = () => {
               ) : (
                 <Link
                   to="/login-register"
-                  className="btn btn-primary fw-semibold rounded-pill px-4 shadow-sm"
+                  className="btn fw-semibold rounded-pill px-4 shadow-sm"
+                  style={{ backgroundColor: "#0DCAF0", color: "#000000ff" }}
                 >
                   Sign Up
                 </Link>

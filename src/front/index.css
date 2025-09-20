@@ -1,3 +1,52 @@
-html, body, #root {
+/* Tags en filtros (SearchPage), DetailsView y botón Select Tags: azul intermedio y fuente bold */
+:root {
+  --tag-blue: #1976a5;
+}
+aside .d-md-flex.flex-wrap.gap-2 .btn-outline-secondary,
+aside #tagsCollapse .d-flex.flex-wrap .btn-outline-secondary,
+.p-3.d-flex.flex-wrap.align-items-end.gap-2 .btn-outline-secondary,
+.d-md-none.mb-2 .btn-outline-secondary.w-100 {
+  color: var(--tag-blue) !important;
+  border-color: var(--tag-blue) !important;
+  background-color: transparent !important;
+  font-weight: bold !important;
+  letter-spacing: 0.02em;
+}
+aside .d-md-flex.flex-wrap.gap-2 .btn-outline-secondary:hover,
+aside .d-md-flex.flex-wrap.gap-2 .btn-outline-secondary:focus,
+aside #tagsCollapse .d-flex.flex-wrap .btn-outline-secondary:hover,
+aside #tagsCollapse .d-flex.flex-wrap .btn-outline-secondary:focus,
+.p-3.d-flex.flex-wrap.align-items-end.gap-2 .btn-outline-secondary:hover,
+.p-3.d-flex.flex-wrap.align-items-end.gap-2 .btn-outline-secondary:focus,
+.d-md-none.mb-2 .btn-outline-secondary.w-100:hover,
+.d-md-none.mb-2 .btn-outline-secondary.w-100:focus {
+  background-color: var(--tag-blue) !important;
+  color: #fff !important;
+}
+aside .d-md-flex.flex-wrap.gap-2 .btn-primary,
+aside #tagsCollapse .d-flex.flex-wrap .btn-primary {
+  background-color: var(--tag-blue) !important;
+  border-color: var(--tag-blue) !important;
+  color: #fff !important;
+  font-weight: bold !important;
+  letter-spacing: 0.02em;
+}
+html,
+body,
+#root {
   min-height: 100%;
+  min-width: 100%;
+}
+
+/* Tag color theme */
+:root {
+  --tag-teal: #72e1d1;
+  --tag-teal-text: #0b3b31; /* dark text for contrast on light teal */
+}
+
+/* All badges used as tags: force filled teal while keeping shape */
+.badge {
+  background-color: var(--tag-teal) !important;
+  color: var(--tag-teal-text) !important;
+  border-color: var(--tag-teal) !important;
 }
