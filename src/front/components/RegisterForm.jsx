@@ -17,6 +17,8 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
     });
     const [passwordError, setPasswordError] = useState("");
     const [errors, setErrors] = useState({});
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     // Regex for password validation: at least 8 characters, 1 uppercase letter, 1 special character
     const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
 
@@ -109,6 +111,24 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
                 setApiError("❌ " + (data && data.message ? data.message : "Request error"));
                 return;
             }
+
+            // Try to show a SweetAlert2 modal if available; otherwise fall back to a simple alert
+            try {
+                const SwalModule = await import('sweetalert2');
+                // try loading CSS too (if package is installed, Vite will bundle it)
+                try { await import('sweetalert2/dist/sweetalert2.min.css'); } catch (e) { /* ignore css load errors */ }
+                const Swal = SwalModule.default || SwalModule;
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Registration successful',
+                    text: 'Your account has been created. You can now sign in.',
+                    confirmButtonColor: '#006d77',
+                });
+            } catch (e) {
+                // sweetalert2 not installed or failed to load; fallback
+                try { window.alert('Registration successful — Your account has been created. You can now sign in.'); } catch (err) { /* noop */ }
+            }
+
             setFormData({
                 first_name: "",
                 last_name: "",
@@ -189,32 +209,74 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
             </div>
             <div className="mb-3">
                 <label className="form-label">Password</label>
-                <input
-                    type="password"
-                    className={`form-control${errors.password ? " is-invalid" : ""}`}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    minLength={8}
-                    maxLength={16}
-                    autoComplete="new-password"
-                />
+                <div className="input-group">
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        className={`form-control${errors.password ? " is-invalid" : ""}`}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                        minLength={8}
+                        maxLength={16}
+                        autoComplete="new-password"
+                    />
+                    <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        title={showPassword ? "Hide password" : "Show password"}
+                    >
+                        {showPassword ? (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M2 2l20 20" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zm-8 4a4 4 0 1 1 0-8 4 4 0 0 1 0 8z" />
+                                <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z" />
+                            </svg>
+                        )}
+                    </button>
+                </div>
                 {errors.password && <div className="invalid-feedback">{errors.password}</div>}
             </div>
             <div className="mb-3">
                 <label className="form-label">Confirm Password</label>
-                <input
-                    type="password"
-                    className={`form-control${errors.confirm_password ? " is-invalid" : ""}`}
-                    name="confirm_password"
-                    value={formData.confirm_password}
-                    onChange={handleChange}
-                    required
-                    minLength={8}
-                    maxLength={16}
-                    autoComplete="new-password"
-                />
+                <div className="input-group">
+                    <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        className={`form-control${errors.confirm_password ? " is-invalid" : ""}`}
+                        name="confirm_password"
+                        value={formData.confirm_password}
+                        onChange={handleChange}
+                        required
+                        minLength={8}
+                        maxLength={16}
+                        autoComplete="new-password"
+                    />
+                    <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                        title={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                    >
+                        {showConfirmPassword ? (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M2 2l20 20" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zm-8 4a4 4 0 1 1 0-8 4 4 0 0 1 0 8z" />
+                                <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z" />
+                            </svg>
+                        )}
+                    </button>
+                </div>
                 {errors.confirm_password && <div className="invalid-feedback">{errors.confirm_password}</div>}
             </div>
             <div className="row">

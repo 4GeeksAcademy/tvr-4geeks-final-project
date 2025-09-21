@@ -1,4 +1,28 @@
 import React, { useEffect, useMemo, useState } from "react";
+
+// Hook to inject CSS for the outline -> filled hover effect for the local button
+function usePoiOutlineHover() {
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById('poi-outline-btn-style')) return;
+
+    const style = document.createElement('style');
+    style.id = 'poi-outline-btn-style';
+    style.innerHTML = `
+      .poi-outline-btn:hover, .poi-outline-btn:focus {
+        background: #006d77 !important;
+        color: #ffffff !important;
+        border-color: #006d77 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      // keep style in DOM for other components, do not remove
+    };
+  }, []);
+}
 import PoiImage from "./PoiImage";
 import { fetchPoisByCityName } from "../apicalls/profileApicalls";
 
@@ -6,41 +30,63 @@ const PoiCarousel = ({
   cityName = "",
   title = "Points of interest",
   onSelect,
-  emptyMessage = "No points of interest found.",
+  emptyMessage = (
+    <div className="d-flex flex-column justify-content-center align-items-center p-3 m-0 w-100 h-100" style={{ background: '#edf6f9', borderRadius: '1rem' }}>
+      <i className="bi bi-emoji-frown mb-2" style={{ fontSize: '2rem', color: '#006d77' }}></i>
+      <span className="fw-semibold fs-5 mb-2 text-center" style={{ color: '#006d77' }}>
+        We didn't find any points of interest near your location. To explore more, please visit our locations page.
+      </span>
+      <a
+        href="/locations"
+        className="btn btn-sm mt-1 poi-outline-btn"
+        style={{
+          background: 'transparent',
+          color: '#006d77',
+          border: '2px solid #006d77',
+          borderRadius: '20px',
+          fontWeight: 500,
+          transition: 'all 0.15s ease-in-out',
+        }}
+      >
+        Search more locations
+      </a>
+    </div>
+  ),
 }) => {
+  usePoiOutlineHover();
   const [pois, setPois] = useState([]);
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Fetch de POIs cuando cambia la ciudad
   useEffect(() => {
-  if (!cityName) {
-    setPois([]);
-    setLoading(false);
-    return;
-  }
-
-  const getPois = async () => {
-    setLoading(true);
-    try {
-      const { ok, data } = await fetchPoisByCityName(cityName);
-      if (ok && Array.isArray(data?.pois)) {
-        setPois(data.pois); 
-      } else {
-        console.error("Error al obtener POIs:", data);
-        setPois([]);
-      }
-    } catch (err) {
-      console.error("Error al llamar a la API:", err);
+    if (!cityName) {
       setPois([]);
-    } finally {
       setLoading(false);
-      setIndex(0);
+      return;
     }
-  };
 
-  getPois();
-}, [cityName]);
+    const getPois = async () => {
+      setLoading(true);
+      try {
+        const { ok, data } = await fetchPoisByCityName(cityName);
+        if (ok && Array.isArray(data?.pois)) {
+          setPois(data.pois);
+        } else {
+          console.error("Error al obtener POIs:", data);
+          setPois([]);
+        }
+      } catch (err) {
+        console.error("Error al llamar a la API:", err);
+        setPois([]);
+      } finally {
+        setLoading(false);
+        setIndex(0);
+      }
+    };
+
+    getPois();
+  }, [cityName]);
 
 
   // POI actual
@@ -130,7 +176,7 @@ const PoiCarousel = ({
             )}
           </>
         ) : (
-          <div className="text-muted text-center my-auto">{emptyMessage}</div>
+          <div className="d-flex text-muted align-items-center justify-content-center text-center m-0 p-0 w-100 h-100">{emptyMessage}</div>
         )}
       </div>
 

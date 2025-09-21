@@ -69,21 +69,44 @@ export const PopularLocations = () => {
               <div
                 className="card text-white h-100 border-0 shadow-sm position-relative"
                 style={{
-                  backgroundImage: `url(${card.image})`,
+                  backgroundImage: `url(${(card.images && card.images.length && card.images[0]) || card.image || `https://via.placeholder.com/640x420?text=No+Image`})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                   minHeight: "300px",
                   borderRadius: "1rem",
                   overflow: "hidden",
+                  cursor: card.isPlaceholder ? "default" : "pointer",
+                  transition: "transform 0.3s, filter 0.3s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!card.isPlaceholder) {
+                    e.currentTarget.style.transform = "scale(1.03)";
+                    e.currentTarget.style.filter = "brightness(0.7)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!card.isPlaceholder) {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.filter = "brightness(1)";
+                  }
                 }}
               >
                 {/* Dark overlay */}
                 <div
                   className="position-absolute top-0 start-0 w-100 h-100"
                   style={{ background: "rgba(0,0,0,0.25)" }}
-                ></div>
+                />
 
-                <div className="card-body position-relative d-flex flex-column justify-content-between h-100">
+                <div
+                  className="card-body position-relative d-flex flex-column justify-content-between h-100"
+                  role={card.isPlaceholder ? undefined : "button"}
+                  tabIndex={card.isPlaceholder ? undefined : 0}
+                  onClick={() => !card.isPlaceholder && navigate(`/details/${card.id}`)}
+                  onKeyDown={(e) => {
+                    if (card.isPlaceholder) return;
+                    if (e.key === "Enter" || e.key === " ") navigate(`/details/${card.id}`);
+                  }}
+                >
                   <h5
                     className="fw-bold px-2 py-1 rounded-4"
                     style={{
@@ -94,21 +117,6 @@ export const PopularLocations = () => {
                   >
                     {card.name}
                   </h5>
-
-                  {!card.isPlaceholder && (
-                    <div className="d-flex justify-content-end">
-                      <button
-                        className="btn btn-light rounded-circle d-flex align-items-center justify-content-center shadow"
-                        style={{ width: "40px", height: "40px" }}
-                        onClick={() => navigate(`/details/${card.id}`)}
-                      >
-                        <FontAwesomeIcon
-                          icon={faLocationArrow}
-                          className="text-primary"
-                        />
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
