@@ -356,7 +356,6 @@ const MyProfile = () => {
               cityName={cityName}
               title={profile?.location ? `POIs in ${cityName}` : "Near me"}
               onSelect={(poi) => navigate(`/details/${poi.id}`)}
-              emptyMessage="No POIs"
             />
           </div>
           <div className="col-12 col-lg-8">
