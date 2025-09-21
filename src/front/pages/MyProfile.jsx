@@ -72,9 +72,32 @@ const MyProfile = () => {
   }, [profile?.name]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    window.dispatchEvent(new Event("loginChange"));
-    navigate("/login-register");
+    // ask for confirmation before logging out
+    const doLogout = () => {
+      localStorage.removeItem("token");
+      window.dispatchEvent(new Event("loginChange"));
+      navigate("/login-register");
+    };
+
+    (async () => {
+      try {
+        const SwalModule = await import('sweetalert2');
+        const Swal = SwalModule.default || SwalModule;
+        await Swal.fire({
+          title: 'Are you sure?',
+          text: 'You will be logged out of your account.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Yes, log me out',
+        }).then((result) => {
+          if (result.isConfirmed) doLogout();
+        });
+      } catch (err) {
+        // fallback
+        const ok = window.confirm('Are you sure you want to log out?');
+        if (ok) doLogout();
+      }
+    })();
   };
 
   const renderSectionSpinner = (height = "200px") => (
@@ -284,7 +307,7 @@ const MyProfile = () => {
           }
         }
       `}</style>
-        <div className="mb-4 d-flex justify-content-between align-items-center" style={{maxWidth: "200px"}}>
+        <div className="mb-4 d-flex justify-content-between align-items-center" style={{ maxWidth: "200px" }}>
           <div>
             <strong>{profile?.name}</strong>
             <br />
@@ -293,7 +316,7 @@ const MyProfile = () => {
           </div>
           <i className="bi bi-pencil-square" role="button" data-bs-toggle="modal" data-bs-target="#userModal"></i>
         </div>
-        <button className="btn btn-outline-danger mt-auto mb-4" style={{maxWidth: "200px"}} onClick={handleLogout}>
+        <button className="btn btn-outline-danger mt-auto mb-4" style={{ maxWidth: "200px" }} onClick={handleLogout}>
           Logout
         </button>
         <div className="flex-grow-1">
