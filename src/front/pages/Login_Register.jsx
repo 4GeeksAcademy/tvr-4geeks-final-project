@@ -5,6 +5,16 @@ import { fetchPoiImages } from "../apicalls/loginRegisterApicalls";
 
 export default function Login_Register() {
   const [isSignIn, setIsSignIn] = useState(true);
+  // If URL contains ?tab=register default to register view
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab === 'register') setIsSignIn(false);
+    } catch (e) {
+      // ignore
+    }
+  }, []);
   const [randomImage, setRandomImage] = useState(null);
   const [apiError, setApiError] = useState("");
   const [loadingDots, setLoadingDots] = useState(3);
@@ -24,6 +34,13 @@ export default function Login_Register() {
     loadImages();
   }, []);
 
+  // Prevent horizontal scroll while on this page (fix for wide image/layout)
+  useEffect(() => {
+    const prev = document.body.style.overflowX;
+    document.body.style.overflowX = 'hidden';
+    return () => { document.body.style.overflowX = prev; };
+  }, []);
+
   useEffect(() => {
     if (randomImage) return;
     const interval = setInterval(() => {
@@ -33,10 +50,10 @@ export default function Login_Register() {
   }, [randomImage]);
 
   return (
-    <div className="container-fluid vw-100 flex-grow-1 d-flex flex-column p-0">
-      <div className="d-flex flex-column flex-md-row flex-grow-1 h-100 w-100">
+    <div className="container-fluid vw-100 flex-grow-1 d-flex flex-column p-0" style={{ overflowX: 'hidden' }}>
+      <div className="row g-0 flex-grow-1 h-100 w-100">
         {/* Image column */}
-        <div className="d-flex flex-column justify-content-between align-items-center p-0 w-100 w-md-55" style={{ maxWidth: "100%", minWidth: 0 }}>
+        <div className="col-12 col-md-6 d-flex flex-column justify-content-between align-items-center p-0" style={{ maxWidth: "100%", minWidth: 0 }}>
           <div className="flex-grow-1 d-flex justify-content-center align-items-center w-100">
             {randomImage ? (
               <img
@@ -49,42 +66,37 @@ export default function Login_Register() {
               <span className="display-6 text-muted p-5">{`Loading${'.'.repeat(loadingDots)}`}</span>
             )}
           </div>
-          <div className="d-flex w-100 ">
-            <button
-              className={`flex-fill fw-bold py-2 ${isSignIn ? "bg-primary text-white" : "bg-white text-primary"}`}
-              style={{ border: "none", borderRadius: 0, outline: "none" }}
-              onClick={() => {
-                setIsSignIn(true);
-                setApiError("");
-              }}
-            >
-              Log in
-            </button>
-            <button
-              className={`flex-fill fw-bold py-2 ${!isSignIn ? "bg-primary text-white" : "bg-white text-primary"}`}
-              style={{ border: "none", borderRadius: 0, outline: "none" }}
-              onClick={() => {
-                setIsSignIn(false);
-                setApiError("");
-              }}
-            >
-              Register
-            </button>
-          </div>
+          {/* navigation buttons removed; image now fills the column */}
         </div>
 
         {/* Form column */}
-        <div className="bg-white p-5 h-100 d-flex flex-column justify-content-center w-100 w-md-45" style={{ maxWidth: "100%", minWidth: 0 }}>
+        <div className="col-12 col-md-6 bg-white p-5 h-100 d-flex flex-column justify-content-center" style={{ maxWidth: "100%", minWidth: 0 }}>
           <style>{`
-        @media (max-width: 750px) {
-          .w-md-55, .w-md-45 {
-            width: 100% !important;
-            max-width: 100% !important;
-          }
+        /* form toggle link styling (color + weight kept; layout handled by utilities) */
+        .form-toggle-link {
+          color: #006d77; /* slightly darker for readability */
+          font-weight: 600;
+          text-decoration: none;
+          background: transparent;
         }
-        @media (min-width: 751px) {
-          .w-md-55 { width: 55% !important; }
-          .w-md-45 { width: 45% !important; }
+        .form-toggle-link:hover {
+          color: #004f54; /* darker on hover */
+          text-decoration: underline;
+        }
+        /* primary action buttons in this view use the provided palette color */
+        .bg-white .btn-primary {
+          background-color: #3dcabcb0;
+          border-color: #83c5be;
+          color: #023232; /* dark text for contrast */
+        }
+        .bg-white .btn-primary:hover {
+          background-color: #006d77; /* accent on hover */
+          border-color: #006d77;
+          color: #ffffff;
+        }
+        .bg-white .btn-primary:active,
+        .bg-white .btn-primary:focus {
+          box-shadow: 0 6px 20px rgba(131,197,190,0.14);
         }
       `}</style>
           <div className="text-center justify-items-center align-items-center mb-4">
@@ -102,9 +114,19 @@ export default function Login_Register() {
           </div>
 
           {isSignIn ? (
-            <LoginForm setApiError={setApiError} />
+            <>
+              <LoginForm setApiError={setApiError} />
+              <div className="text-center mt-3">
+                <small className="text-muted">Don't have an account? <button className="btn btn-link form-toggle-link align-baseline p-0" onClick={() => { setIsSignIn(false); setApiError(""); window.history.replaceState({}, '', '/login-register?tab=register'); }}>Register</button></small>
+              </div>
+            </>
           ) : (
-            <RegisterForm setApiError={setApiError} setIsSignIn={setIsSignIn} />
+            <>
+              <RegisterForm setApiError={setApiError} setIsSignIn={setIsSignIn} />
+              <div className="text-center mt-3">
+                <small className="text-muted">Already have an account? <button className="btn btn-link form-toggle-link align-baseline p-0" onClick={() => { setIsSignIn(true); setApiError(""); window.history.replaceState({}, '', '/login-register'); }}>Log in</button></small>
+              </div>
+            </>
           )}
         </div>
       </div>

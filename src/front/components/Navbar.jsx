@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import logoNav from "../assets/img/logo-nav.png";
 export const Navbar = () => {
@@ -11,19 +11,19 @@ export const Navbar = () => {
     window.addEventListener("storage", checkLogin);
     window.addEventListener("loginChange", checkLogin);
 
-    
+
     const handleBeforeUnload = () => {
       localStorage.setItem("isReloading", "true");
     };
 
-    
+
     const handleLoad = () => {
       const reloading = localStorage.getItem("isReloading");
       if (reloading) {
-        
+
         localStorage.removeItem("isReloading");
       } else {
-        
+
         localStorage.removeItem("token");
         setIsLoggedIn(false);
       }
@@ -44,13 +44,13 @@ export const Navbar = () => {
     <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-3">
       <div className="container">
         {/* Logo */}
-        <Link to="/" className="navbar-brand fw-bold fs-4 d-flex align-items-center">
+        <NavLink to="/" className="navbar-brand fw-bold fs-4 d-flex align-items-center">
           <img
             src={logoNav}
             alt="Logo"
             style={{ height: "80px", marginRight: "10px" }}
           />
-        </Link>
+        </NavLink>
 
         <button
           className="navbar-toggler"
@@ -68,37 +68,83 @@ export const Navbar = () => {
         <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
           <ul className="navbar-nav align-items-lg-center">
             <li className="nav-item">
-              <Link to="/" className="nav-link fw-semibold">
+              <NavLink to="/" className={({ isActive }) => "nav-link fw-semibold" + (isActive ? " active-nav" : "")}>
                 Home
-              </Link>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <Link to="/locations" className="nav-link fw-semibold">
+              <NavLink to="/locations" className={({ isActive }) => "nav-link fw-semibold" + (isActive ? " active-nav" : "")}>
                 Locations
-              </Link>
+              </NavLink>
             </li>
             <li className="nav-item">
-              <Link to="/about" className="nav-link fw-semibold">
+              <NavLink to="/about" className={({ isActive }) => "nav-link fw-semibold" + (isActive ? " active-nav" : "")}>
                 About Us
-              </Link>
+              </NavLink>
             </li>
             <li className="nav-item ms-lg-3">
               {isLoggedIn ? (
-                <Link to="/myProfile" className="nav-link fw-semibold">
+                <NavLink to="/myProfile" className={({ isActive }) => "nav-link fw-semibold" + (isActive ? " active-nav" : "")}>
                   My Profile
-                </Link>
+                </NavLink>
               ) : (
-                <Link
-                  to="/login-register"
-                  className="btn btn-primary fw-semibold rounded-pill px-4 shadow-sm"
+                <NavLink
+                  to="/login-register?tab=register"
+                  className={({ isActive }) => "btn fw-semibold rounded-pill px-4 shadow-sm" + (isActive ? " active-nav-btn" : "")}
+                  style={{ backgroundColor: '#006d77', color: '#ffffff', border: 'none' }}
                 >
                   Sign Up
-                </Link>
+                </NavLink>
               )}
             </li>
           </ul>
         </div>
       </div>
+      <style>{`
+        .navbar { position: relative; transition: box-shadow 0.2s ease; }
+        /* subtle decorative thin line at the bottom of the navbar */
+        .navbar::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 1px;
+          background: rgba(0,109,119,0.06);
+        }
+        .navbar .nav-link {
+          color: #006d77 !important;
+          transition: transform 0.15s, opacity 0.15s;
+        }
+        /* active indicator: subtle rounded rectangle with gentle relief */
+        .navbar .active-nav {
+          background: rgba(0,109,119,0.06);
+          border-radius: 8px;
+          padding: 6px 10px;
+          box-shadow: 0 1px 2px rgba(2,48,49,0.05) inset, 0 2px 6px rgba(2,48,49,0.03);
+          color: #006d77 !important;
+        }
+        /* make btn have the same hover lift as nav links */
+        .navbar .btn {
+          transition: transform 0.15s, opacity 0.15s;
+        }
+        .navbar .btn:hover { transform: translateY(-3px); opacity: 1 !important; }
+        /* active state for sign up when on that page */
+        .navbar .active-nav-btn {
+          box-shadow: 0 2px 8px rgba(0,109,119,0.12);
+          transform: translateY(-2px);
+        }
+        /* keep link font-size as defined by Bootstrap but apply slight lift on hover */
+        .navbar .nav-link:hover {
+          transform: translateY(-3px);
+          opacity: 1 !important;
+          text-decoration: none;
+        }
+        /* for small screens center the items visually */
+        @media (max-width: 767px) {
+          .navbar .container { padding-left: 1rem; padding-right: 1rem; }
+        }
+      `}</style>
     </nav>
   );
 };

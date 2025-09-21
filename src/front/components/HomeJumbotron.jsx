@@ -38,9 +38,11 @@ export const HomeJumbotron = () => {
           top: 0;
           left: 0;
           height: 100%;
-          width: 65%;
-          padding-left: 3rem;
-          padding-right: 3rem;
+          /* keep overlay taking a portion of the left side but avoid content glued to the edge on very wide screens */
+          width: 70%;
+          max-width: 1300px;
+          padding-left: clamp(5rem, 10%, 25rem);
+          padding-right: clamp(1rem, 3vw, 4rem);
           background: linear-gradient(90deg, rgba(0,109,119,0.85) 15%, rgba(0,109,119,0.65) 45%, rgba(49,175,169,0.45) 75%, rgba(0,109,119,0) 100%);
         }
         @media (max-width: 450px) {
