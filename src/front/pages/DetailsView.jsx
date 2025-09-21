@@ -96,10 +96,10 @@ export const DetailsView = () => {
     </div>;
 
     return (
-        <div className="container-fluid d-flex flex-column flex-lg-row flex-grow-1 p-0 detailsview-responsive">
+        <div className="container-fluid d-flex flex-column flex-lg-row p-0 detailsview-responsive">
             {/* Left column */}
             <div className="d-flex flex-column px-4 pt-4 left-col-responsive">
-                <div className="d-flex flex-column w-100 h-75" style={{ maxHeight: "600px" }}>
+                <div className="d-flex flex-grow-1 flex-column w-100 h-75 poi-carousel-container" style={{ maxHeight: "550px" }}>
                     <PoiImagesCarousel poiId={Id} />
                 </div>
                 <div className="flex-shrink-1 overflow-auto p-3 bg-white border-top">
@@ -136,7 +136,7 @@ export const DetailsView = () => {
                     <MapComponent lat={poi.latitude} long={poi.longitude} />
                 </div>
                 {/* Tags */}
-                <div className="p-3 d-flex flex-wrap align-items-end gap-2">
+                <div className="p-3 d-flex flex-wrap align-items-end gap-2 mb-5">
                     {tags.map(tag => (
                         <button
                             key={tag.id}
@@ -211,6 +211,15 @@ export const DetailsView = () => {
                 .map-responsive > * {
                     height: 100% !important;
                     min-height: 180px !important;
+                }
+                /* Limit carousel height and prevent overlap */
+                .poi-carousel-container {
+                    max-height: 550px !important;
+                    overflow: hidden !important;
+                }
+                .poi-carousel-container > * {
+                    height: auto !important;
+                    max-height: 550px !important;
                 }
             }
             @media (min-width: 992px) {
