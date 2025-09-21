@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import jumbotronImage from "../assets/img/woman.jpg";
-
+import logo from "../assets/img/logo.png";
 export const HomeJumbotron = () => {
   const navigate = useNavigate();
   return (
@@ -16,7 +16,7 @@ export const HomeJumbotron = () => {
     >
       <div className="jumbotron-overlay d-flex flex-column justify-content-center text-white">
         <img
-          src=""
+          src={logo}
           alt="Logo"
           className="mb-4"
           style={{ width: "140px" }}
