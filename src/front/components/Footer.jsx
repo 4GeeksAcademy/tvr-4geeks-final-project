@@ -4,8 +4,8 @@ import { faInstagram, faTwitter } from '@fortawesome/free-brands-svg-icons';
 import { faArrowUp } from '@fortawesome/free-solid-svg-icons';
 
 export const Footer = () => (
-	<footer className="footer py-4" style={{ position: 'relative', backgroundColor: "#edf6f9", boxShadow: '0 -3px 6px rgba(2,48,49,0.1)' }}>
-		<div className="container-fluid" style={{ maxWidth: "85%" }}>
+	<footer className="footer py-5" style={{ position: 'relative', backgroundColor: "#edf6f9", boxShadow: '0 -3px 6px rgba(2,48,49,0.1)', minHeight: "120px" }}>
+		<div className="container" >
 			<div className="row align-items-center">
 				<div className="col-12 col-md-4 d-flex align-items-center mb-3 mb-md-0">
 					<img src={logoNav} alt="Logo" style={{ width: 90, marginRight: 12 }} />
