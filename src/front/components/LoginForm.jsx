@@ -15,13 +15,9 @@ export default function LoginForm({ setApiError }) {
         const newErrors = {};
         if (!formData.credential.trim()) {
             newErrors.credential = "Username or email is required.";
-        } else if (formData.credential.length < 4 || formData.credential.length > 30) {
-            newErrors.credential = "Username or email must be between 4 and 30 characters.";
         }
         if (!formData.passwordlogin) {
             newErrors.passwordlogin = "Password is required.";
-        } else if (formData.passwordlogin.length < 8 || formData.passwordlogin.length > 16) {
-            newErrors.passwordlogin = "Password must be between 8 and 16 characters.";
         }
         return newErrors;
     };
@@ -127,7 +123,7 @@ export default function LoginForm({ setApiError }) {
                         )}
                     </button>
                 </div>
-                {errors.passwordlogin && <div className="invalid-feedback">{errors.passwordlogin}</div>}
+                {errors.passwordlogin && <div className="invalid-feedback d-block">{errors.passwordlogin}</div>}
             </div>
             <button className="btn btn-primary w-100" type="submit">
                 Log In
