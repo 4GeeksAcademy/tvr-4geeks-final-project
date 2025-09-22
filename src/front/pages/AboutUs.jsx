@@ -1,11 +1,16 @@
 import React from "react";
-import logo from "../assets/img/logo-placeholder-image.png"; // Ajustar si el path cambia
+import logo from "../assets/img/logo.png";
 
 export function AboutUs() {
     return (
         <div className="container py-5 flex-grow-1">
             <div className="text-center mb-5">
-                <img src={logo} alt="App Logo" style={{ maxWidth: '140px' }} className="mb-3" />
+                <img
+                    src={logo}
+                    alt="Logo"
+                    className="mb-4"
+                    style={{ width: "140px" }}
+                />
                 <h1 className="h3 fw-bold">About Our Travel App</h1>
                 <p className="text-muted mx-auto" style={{ maxWidth: 700 }}>
                     We are a platform designed to help you discover and plan unforgettable experiences around the world.
@@ -15,7 +20,7 @@ export function AboutUs() {
 
             <div className="row g-4 mb-5">
                 <div className="col-md-4">
-                    <div className="card h-100 shadow-sm">
+                    <div className="card h-100 shadow-sm" style={{background: "linear-gradient(to top, #72E1D1, #EDF6F9)"}}>
                         <div className="card-body d-flex flex-column">
                             <h5 className="card-title">Our Mission</h5>
                             <p className="card-text small text-muted mb-0">
@@ -26,7 +31,7 @@ export function AboutUs() {
                     </div>
                 </div>
                 <div className="col-md-4">
-                    <div className="card h-100 shadow-sm">
+                    <div className="card h-100 shadow-sm" style={{background: "linear-gradient(to top, #72E1D1, #EDF6F9)"}}>
                         <div className="card-body d-flex flex-column">
                             <h5 className="card-title">Our Vision</h5>
                             <p className="card-text small text-muted mb-0">
@@ -36,7 +41,7 @@ export function AboutUs() {
                     </div>
                 </div>
                 <div className="col-md-4">
-                    <div className="card h-100 shadow-sm">
+                    <div className="card h-100 shadow-sm" style={{background: "linear-gradient(to top, #72E1D1, #EDF6F9)"}}>
                         <div className="card-body d-flex flex-column">
                             <h5 className="card-title">Our Values</h5>
                             <p className="card-text small text-muted mb-0">
@@ -54,23 +59,26 @@ export function AboutUs() {
                         name: "Tito González",
                         linkedin: "https://www.linkedin.com/in/tito-julio-gonzalez-padial-7b7292330",
                         github: "https://github.com/tgp034",
-                        despcription: ""
+                        despcription: "Full Stack Developer skilled in creating web applications from front-end to back-end."
                     },
                     {
                         name: "Vicente Vetrano",
                         linkedin: "https://www.linkedin.com/in/vicente-vetrano-a21381266",
                         github: "https://github.com/VicenteVD",
-                        despcription: ""
+                        despcription: "Crafting High-Impact, Optimized Web Experiences"
                     },
                     {
                         name: "Raphael Kunstmann",
-                        linkedin: null,
+                        linkedin: "https://www.linkedin.com/in/raphael-kunstmann-98707b278",
                         github: "https://github.com/ThatRapho",
-                        despcription: ""
+                        despcription: "Full Stack Developer delivering user-friendly interfaces backed by solid server-side logic."
                     }
                 ].map((dev, i) => (
                     <div className="col-md-4" key={dev.name}>
-                        <div className="card h-100 border-0 shadow-sm">
+                        <div className="card h-100 shadow-sm" style={{
+                            border: "2px solid rgba(8, 163, 177, 0.4)", 
+                            borderRadius: "15px" 
+                        }}>
                             <div className="card-body d-flex flex-column text-center">
                                 <div className="rounded-circle bg-light mx-auto mb-3 d-flex align-items-center justify-content-center" style={{ width: 90, height: 90, fontSize: 34 }}>
                                     {dev.name.split(' ')[0][0]}{dev.name.split(' ')[1][0]}
