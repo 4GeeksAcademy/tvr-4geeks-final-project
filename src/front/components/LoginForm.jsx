@@ -62,7 +62,7 @@ export default function LoginForm({ setApiError }) {
                 await Swal.fire({
                     icon: 'success',
                     title: 'Login successful',
-                    text: 'Welcome back!',
+                    text: 'Welcome!',
                     confirmButtonColor: '#006d77',
                 });
             } catch (e) {
@@ -76,7 +76,7 @@ export default function LoginForm({ setApiError }) {
     };
 
     return (
-        <form onSubmit={handleSubmit} noValidate className="flex-grow-1 justify-self-center align-self-center" style={{ minWidth: "300px", maxWidth: "600px" }}>
+        <form onSubmit={handleSubmit} noValidate className="justify-self-center align-self-center" style={{ minWidth: "300px", maxWidth: "600px" }}>
             <div className="mb-3">
                 <label className="form-label">Email or username</label>
                 <input
@@ -125,7 +125,7 @@ export default function LoginForm({ setApiError }) {
                 </div>
                 {errors.passwordlogin && <div className="invalid-feedback d-block">{errors.passwordlogin}</div>}
             </div>
-            <button className="btn btn-primary w-100" type="submit">
+            <button className="btn btn-primary w-100 mt-2" type="submit">
                 Log In
             </button>
         </form>

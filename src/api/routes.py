@@ -1,12 +1,15 @@
 from flask import Flask, request, jsonify, url_for, Blueprint, current_app
-from api.models import db, User, Poi, Country, City, Favorite, Visited, PoiImage, Tag, PoiTag
-from api.utils import generate_sitemap, APIException
-from flask_cors import CORS
-from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
-from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
-from sqlalchemy.exc import IntegrityError
 import uuid
+from sqlalchemy.exc import IntegrityError
+from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
+from flask_cors import CORS
+from api.utils import generate_sitemap, APIException
+from api.models import db, User, Poi, Country, City, Favorite, Visited, PoiImage, Tag, PoiTag
+
+
+
 
 api = Blueprint('api', __name__)
 CORS(api)
@@ -14,7 +17,8 @@ CORS(api)
 PROFILE_ALLOWED_FIELDS = {'user_name', 'email', 'location', 'password'}
 COUNTRY_ALLOWED_FIELDS = {'name', 'img'}
 CITY_ALLOWED_FIELDS = {'name', 'img', 'season', 'country_id'}
-POI_ALLOWED_FIELDS = {'name', 'description', 'latitude', 'longitude', 'city_id'}
+POI_ALLOWED_FIELDS = {'name', 'description',
+                      'latitude', 'longitude', 'city_id'}
 
 
 def handle_unexpected_error(context: str):
@@ -25,6 +29,7 @@ def handle_unexpected_error(context: str):
     Raises:
         APIException: A generic error message with a 500 status code.
     """
+
     current_app.logger.exception(context)
     raise APIException(
         f"An unexpected error occurred while {context}", status_code=500)
@@ -94,7 +99,8 @@ def require_body_fields(body, fields, item_name=None, optional_fields=None):
         APIException: If any required field is missing, empty, or if there are extra fields.
     """
     missing_fields = [field for field in fields if field not in body]
-    extra_fields = [field for field in body if field not in fields and field not in (optional_fields or [])]
+    extra_fields = [field for field in body if field not in fields and field not in (
+        optional_fields or [])]
     empty_fields = [field for field in fields if not body.get(field)]
 
     item_info = f" in item '{item_name}'" if item_name else ""
@@ -122,16 +128,17 @@ def normalize_body_to_list(body):
     """
     if isinstance(body, dict):
         return [body]
-    
+
     if not isinstance(body, list):
         raise APIException('Invalid input format', status_code=400)
-    
+
     if not body:
         raise APIException('Input list cannot be empty', status_code=400)
 
     for item in body:
         if not isinstance(item, dict):
-            raise APIException('Each item must be a JSON object', status_code=400)
+            raise APIException(
+                'Each item must be a JSON object', status_code=400)
 
     return body
 
@@ -623,6 +630,33 @@ def get_countries():
     except Exception:
         handle_unexpected_error('retrieving countries')
 
+
+@api.route('/countries/<string:country_id>', methods=['GET'])
+def get_country_by_id(country_id):
+    """
+    Retrieve details of a country by its ID.
+    Args:
+        country_id (str): Country ID.
+    Body:
+        None.
+    Raises:
+        APIException: If the country is not found.
+    Returns:
+        Response: JSON with country details.
+    """
+    try:
+        country = get_object_or_404(
+            Country,
+            unique_field_value=country_id,
+            not_found_message='Country not found',
+            field_name='id'
+        )
+        return jsonify({'message': 'Country retrieved successfully', 'country': country.serialize()}), 200
+    except APIException:
+        raise
+    except Exception:
+        handle_unexpected_error('retrieving country by id')
+        
 
 @api.route('/countries/<string:country_name>', methods=['GET'])
 def get_country(country_name):
@@ -1206,19 +1240,24 @@ def create_poi():
             longitude = float(item.get('longitude'))
         except (TypeError, ValueError):
             raise APIException('latitude/longitude must be numeric', 400)
-        country = Country.query.filter_by(name=item.get('country_name')).first()
+        country = Country.query.filter_by(
+            name=item.get('country_name')).first()
         if not country:
-            raise APIException(f"Country '{item.get('country_name')}' not found", status_code=400)
-        city = City.query.filter_by(name=item.get('city_name'), country_id=country.id).first()
+            raise APIException(
+                f"Country '{item.get('country_name')}' not found", status_code=400)
+        city = City.query.filter_by(name=item.get(
+            'city_name'), country_id=country.id).first()
         if not city:
-            raise APIException(f"City '{item.get('city_name')}' in country '{item.get('country_name')}' not found", status_code=400)
+            raise APIException(
+                f"City '{item.get('city_name')}' in country '{item.get('country_name')}' not found", status_code=400)
         key = f"{name}:{city.id}"
         if key in seen_keys:
             raise APIException(f"Duplicate entry: {key}", status_code=400)
         seen_keys.add(key)
         existing = Poi.query.filter_by(name=name, city_id=city.id).first()
         if existing:
-            raise APIException(f"POI '{name}' already exists in this city", status_code=400)
+            raise APIException(
+                f"POI '{name}' already exists in this city", status_code=400)
         tags = item.get('tags', [])
         if not isinstance(tags, list):
             raise APIException('tags must be a list', 400)
@@ -1230,7 +1269,8 @@ def create_poi():
             raise APIException('poiimages must be a list', 400)
         for img in poiimages:
             if not isinstance(img, str) or not img:
-                raise APIException('each poiimage must be a non-empty string', 400)
+                raise APIException(
+                    'each poiimage must be a non-empty string', 400)
         poi = Poi(
             id=str(uuid.uuid4()),
             name=name,
@@ -1243,10 +1283,12 @@ def create_poi():
         for tag_name in tags:
             tag = Tag.query.filter_by(name=tag_name).first()
             if not tag:
-                raise APIException(f"Tag '{tag_name}' not found", status_code=404)
+                raise APIException(
+                    f"Tag '{tag_name}' not found", status_code=404)
             poi_tag_relations.append(PoiTag(poi_id=poi.id, tag_id=tag.id))
         for img in poiimages:
-            poi_images_relations.append(PoiImage(id=str(uuid.uuid4()), url=img, poi_id=poi.id))
+            poi_images_relations.append(
+                PoiImage(id=str(uuid.uuid4()), url=img, poi_id=poi.id))
     try:
         db.session.add_all(created)
         db.session.flush()  # Flush to assign IDs before creating PoiTag entries
@@ -1291,7 +1333,7 @@ def update_poi(poi_id):
     provided_keys = set(body.keys())
     if not provided_keys or not provided_keys.issubset(allowed_fields):
         raise APIException('No valid fields supplied', status_code=400)
-    
+
     # Determine prospective new values
     current_name = poi.name
     current_city_id = poi.city_id
@@ -1562,7 +1604,7 @@ def update_city(city_id):
     provided_keys = set(body.keys())
     if not provided_keys or not provided_keys.issubset(allowed_fields):
         raise APIException('No valid fields supplied', status_code=400)
-    
+
     # Determine prospective new values
     current_name = city.name
     current_country_id = city.country_id

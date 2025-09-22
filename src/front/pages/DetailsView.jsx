@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { PoiImagesCarousel } from "../components/PoiImagesCarousel";
 import { WeatherCalendar } from "../components/WeatherCalendar";
 import { MapComponent } from "../components/MapComponent";
@@ -10,6 +10,8 @@ export const DetailsView = () => {
     const navigate = useNavigate();
     const [poi, setPoi] = useState(null);
     const [tags, setTags] = useState([]);
+    const [city, setCity] = useState(null);
+    const [country, setCountry] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isFav, setIsFav] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -23,14 +25,48 @@ export const DetailsView = () => {
                 setPoi(poiRes.poi);
                 const tagsRes = await getPoiTags(Id);
                 setTags(tagsRes.tags || []);
+                // Obtener ciudad y país si hay city_id
+                if (poiRes.poi && poiRes.poi.city_id) {
+                    const cityRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/cities/${poiRes.poi.city_id}`);
+                    if (cityRes.ok) {
+                        const cityData = await cityRes.json();
+                        setCity(cityData.city);
+                        if (cityData.city && cityData.city.country_id) {
+                            const countryRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/countries/${cityData.city.country_id}`);
+                            if (countryRes.ok) {
+                                const countryData = await countryRes.json();
+                                setCountry(countryData.country || null);
+                            } else {
+                                setCountry(null);
+                            }
+                        } else {
+                            setCountry(null);
+                        }
+                    } else {
+                        setCity(null);
+                        setCountry(null);
+                    }
+                } else {
+                    setCity(null);
+                    setCountry(null);
+                }
             } catch (err) {
                 setPoi(null);
                 setTags([]);
+                setCity(null);
+                setCountry(null);
             }
             setLoading(false);
         };
         if (Id) fetchDetails();
     }, [Id]);
+    // Memo para mostrar ciudad y país
+    const cityCountryText = useMemo(() => {
+        const cityName = city?.name;
+        const countryName = country?.name;
+        if (!cityName && !countryName) return null;
+        return `${cityName || ''}${cityName && countryName ? ', ' : ''}${countryName || ''}`;
+    }, [city, country]);
 
     useEffect(() => {
         if (!loading) return;
@@ -110,7 +146,10 @@ export const DetailsView = () => {
             {/* Right column */}
             <div className="d-flex flex-column bg-light border-start pe-4 right-col-responsive">
                 <div className=" d-flex flex-column justify-content-between p-3">
-                    <h1 className="h4 mb-3 align-self-center">{poi.name}</h1>
+                    <h1 className="h4 mb-1 align-self-center">{poi.name}</h1>
+                    {cityCountryText && (
+                        <div className="mb-3 align-self-center text-muted" style={{ fontSize: '1.1rem' }}>{cityCountryText}</div>
+                    )}
                     <div className="mb-3">
                         <WeatherCalendar lat={poi.latitude} lon={poi.longitude} />
                     </div>
