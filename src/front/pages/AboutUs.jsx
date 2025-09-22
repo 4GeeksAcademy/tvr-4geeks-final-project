@@ -59,7 +59,7 @@ export function AboutUs() {
                         name: "Tito González",
                         linkedin: "https://www.linkedin.com/in/tito-julio-gonzalez-padial-7b7292330",
                         github: "https://github.com/tgp034",
-                        despcription: ""
+                        despcription: "Full Stack Developer skilled in creating web applications from front-end to back-end."
                     },
                     {
                         name: "Vicente Vetrano",
@@ -69,9 +69,9 @@ export function AboutUs() {
                     },
                     {
                         name: "Raphael Kunstmann",
-                        linkedin: null,
+                        linkedin: "https://www.linkedin.com/in/raphael-kunstmann-98707b278",
                         github: "https://github.com/ThatRapho",
-                        despcription: ""
+                        despcription: "Full Stack Developer delivering user-friendly interfaces backed by solid server-side logic."
                     }
                 ].map((dev, i) => (
                     <div className="col-md-4" key={dev.name}>
