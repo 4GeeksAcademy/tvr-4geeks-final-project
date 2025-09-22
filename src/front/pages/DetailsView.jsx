@@ -96,7 +96,7 @@ export const DetailsView = () => {
     </div>;
 
     return (
-        <div className="container-fluid d-flex flex-column flex-lg-row p-0 detailsview-responsive">
+        <div className="container-fluid d-flex flex-column flex-lg-row p-0 flex-grow-1 detailsview-responsive">
             {/* Left column */}
             <div className="d-flex flex-column px-4 pt-4 left-col-responsive">
                 <div className="d-flex flex-grow-1 flex-column w-100 h-75 poi-carousel-container" style={{ maxHeight: "550px" }}>
@@ -114,7 +114,7 @@ export const DetailsView = () => {
                     <div className="mb-3">
                         <WeatherCalendar lat={poi.latitude} lon={poi.longitude} />
                     </div>
-                    {isLoggedIn && (
+                    {isLoggedIn ? (
                         <div className="d-flex gap-2">
                             <button
                                 onClick={handleFavorite}
@@ -127,6 +127,16 @@ export const DetailsView = () => {
                                 className={`btn flex-fill ${isVisit ? "btn-remove-visit" : "btn-add-visit"}`}
                             >
                                 {isVisit ? "Remove from visited" : "Mark as visited"}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="d-flex gap-2 justify-content-center">
+                            <button
+                                onClick={() => navigate('/login-register')}
+                                className="btn btn-info btn-md rounded-pill px-3 py-2 shadow w-100"
+                                style={{ maxWidth: '300px' }}
+                            >
+                                Log in to add favorites and visited
                             </button>
                         </div>
                     )}
@@ -222,6 +232,7 @@ export const DetailsView = () => {
                     max-height: 550px !important;
                 }
             }
+            /* Login button uses jumbotron styles */
             @media (min-width: 992px) {
                 .detailsview-responsive {
                     flex-direction: row !important;

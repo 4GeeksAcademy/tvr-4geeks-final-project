@@ -4,6 +4,18 @@ import logoNav from "../assets/img/logo-nav.png";
 export const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  const handleNavItemClick = () => {
+    try {
+      const navbarCollapse = document.getElementById('navbarNav');
+      const toggler = document.getElementById('navbarToggler');
+      if (navbarCollapse && toggler && navbarCollapse.classList.contains('show')) {
+        toggler.click();
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     const checkLogin = () => setIsLoggedIn(!!localStorage.getItem("token"));
     checkLogin();
@@ -54,6 +66,7 @@ export const Navbar = () => {
 
         <button
           className="navbar-toggler"
+          id="navbarToggler"
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#navbarNav"
@@ -68,32 +81,33 @@ export const Navbar = () => {
         <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
           <ul className="navbar-nav align-items-lg-center">
             <li className="nav-item">
-              <NavLink to="/" className={({ isActive }) => "nav-link fw-semibold" + (isActive ? " active-nav" : "")}>
+              <NavLink to="/" onClick={handleNavItemClick} className={({ isActive }) => "nav-link fw-semibold" + (isActive ? " active-nav" : "")}>
                 Home
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/locations" className={({ isActive }) => "nav-link fw-semibold" + (isActive ? " active-nav" : "")}>
+              <NavLink to="/locations" onClick={handleNavItemClick} className={({ isActive }) => "nav-link fw-semibold" + (isActive ? " active-nav" : "")}>
                 Locations
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/about" className={({ isActive }) => "nav-link fw-semibold" + (isActive ? " active-nav" : "")}>
+              <NavLink to="/about" onClick={handleNavItemClick} className={({ isActive }) => "nav-link fw-semibold" + (isActive ? " active-nav" : "")}>
                 About Us
               </NavLink>
             </li>
             <li className="nav-item ms-lg-3">
               {isLoggedIn ? (
-                <NavLink to="/myProfile" className={({ isActive }) => "nav-link fw-semibold" + (isActive ? " active-nav" : "")}>
+                <NavLink to="/myProfile" onClick={handleNavItemClick} className={({ isActive }) => "nav-link fw-semibold" + (isActive ? " active-nav" : "")}>
                   My Profile
                 </NavLink>
               ) : (
                 <NavLink
-                  to="/login-register?tab=register"
+                  to="/login-register"
+                  onClick={handleNavItemClick}
                   className={({ isActive }) => "btn fw-semibold rounded-pill px-4 shadow-sm" + (isActive ? " active-nav-btn" : "")}
                   style={{ backgroundColor: '#006d77', color: '#ffffff', border: 'none' }}
                 >
-                  Sign Up
+                  Log In
                 </NavLink>
               )}
             </li>
