@@ -241,7 +241,7 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
                         )}
                     </button>
                 </div>
-                {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+                {errors.password && <div className="invalid-feedback d-block">{errors.password}</div>}
             </div>
             <div className="mb-3">
                 <label className="form-label">Confirm Password</label>
@@ -277,7 +277,7 @@ export default function RegisterForm({ setApiError, setIsSignIn }) {
                         )}
                     </button>
                 </div>
-                {errors.confirm_password && <div className="invalid-feedback">{errors.confirm_password}</div>}
+                {errors.confirm_password && <div className="invalid-feedback d-block">{errors.confirm_password}</div>}
             </div>
             <div className="row">
                 <div className="col-md-6 mb-3">
