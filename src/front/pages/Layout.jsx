@@ -9,7 +9,9 @@ export const Layout = () => {
         <ScrollToTop>
             <div className="d-flex flex-column min-vh-100 w-100">
                 <Navbar />
+                <main className="flex-grow-1 d-flex flex-column">
                     <Outlet />
+                </main>
                 <Footer />
             </div>
         </ScrollToTop>
